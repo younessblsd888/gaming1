@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>⚽ Ball Rush 3D — Farcaster Mini App</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: linear-gradient(135deg, #0a0e13 0%, #1a1f2e 100%);
+    color: #e7ecf0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100dvh;
+    padding: 0;
+  }
+  .wrap { width: min(900px, 96vw); position: relative; }
+  
+  .game-header {
+    width: 100%;
+    background: #12171b;
+    border-bottom: 2px solid #1f2a32;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  
+  .game-header h1 {
+    font-size: 20px;
+    margin: 0;
+  }
+  
+  .header-stats {
+    display: flex;
+    gap: 30px;
+  }
+  
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .stat-item label {
+    font-size: 12px;
+  }
+  
+  .stat-item .score-display {
+    font-size: 20px;
+  }
+  .card { background: #12171b; border: 1px solid #1f2a32; border-radius: 14px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+  .overlay { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(8,11,14,.85); backdrop-filter: blur(4px); padding: 16px; z-index: 100; }
+  .hidden { display: none !important; }
+  
+  h1 {
+    font-size: 28px;
+    font-weight: 900;
+    margin-bottom: 12px;
+    text-shadow: 0 2px 10px rgba(168,85,247,0.5);
+  }
+  
+  .muted {
+    color: #9aa7b1;
+    font-size: 14px;
+    line-height: 1.4;
+    margin-bottom: 16px;
+  }
+  
+  .btn-primary {
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #a855f7, #7c3aed);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-weight: 900;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(168,85,247,0.4);
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(168,85,247,0.5);
+  }
+  
+  .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  #canvas {
+    background: #0a0a1f;
+    border: 3px solid #7c3aed;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    max-width: 100%;
+    display: block;
+    margin: 20px auto 0 auto;
+    touch-action: none;
+    cursor: pointer;
+  }
+  
+  .info {
+    color: #94a3b8;
+    font-size: 13px;
+    text-align: center;
+    display: block;
+    margin: 15px 0 10px 0;
+    padding: 0 20px;
+  }
+  
+  #controls {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 0 20px 20px 20px;
+    margin-top: -150px;
+    position: relative;
+    z-index: 5;
+  }
+  
+  .control-row {
+    background: rgba(15,23,42,0.8);
+    border: 2px solid #1e293b;
+    border-radius: 12px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+  }
+  
+  label {
+    font-weight: 700;
+    font-size: 14px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .score-display {
+    font-size: 18px;
+    font-weight: 700;
+    color: #a855f7;
+  }
+  
+  #status {
+    margin-top: 15px;
+    font-size: 13px;
+    line-height: 1.5;
+    background: #0f151a;
+    border: 1px solid #1f2a32;
+    border-radius: 10px;
+    padding: 12px;
+  }
+  
+  #status b { color: #cde7d8; }
+  #status .ok { color: #4ade80; }
+  #status .warn { color: #fbbf24; }
+  #status .err { color: #f87171; }
+  #status a { color: #86c6ff; text-decoration: none; }
+  
+  #play-again {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    padding: 16px 32px;
+    background: linear-gradient(135deg, #a855f7, #7c3aed);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-weight: 900;
+    font-size: 18px;
+    cursor: pointer;
+    box-shadow: 0 10px 40px rgba(168,85,247,0.5);
+    z-index: 50;
+  }
+  
+  .instructions {
+    background: rgba(168,85,247,0.1);
+    border: 1px solid rgba(168,85,247,0.3);
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 15px;
+  }
+  
+  .instructions h3 {
+    color: #a855f7;
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+  
+  .instructions ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .instructions li {
+    color: #cbd5e1;
+    font-size: 14px;
+    margin-bottom: 8px;
+    padding-left: 20px;
+    position: relative;
+  }
+  
+  .instructions li:before {
+    content: "•";
+    color: #a855f7;
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+  }
+  
+  .direction-controls {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .direction-btn {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    border: 3px solid #a855f7;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 36px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(168,85,247,0.4);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    user-select: none;
+  }
+  
+  .direction-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 3px 10px rgba(168,85,247,0.4);
+  }
+  
+  @media (max-width: 720px) {
+    #canvas { width: 100%; height: auto; }
+    .game-header {
+      padding: 12px 15px;
+    }
+    .game-header h1 {
+      font-size: 18px;
+    }
+    .header-stats {
+      gap: 20px;
+    }
+    .stat-item label {
+      font-size: 11px;
+    }
+    .stat-item .score-display {
+      font-size: 18px;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="game-header">
+    <h1>⚽ Ball Rush 3D</h1>
+    <div class="header-stats">
+      <div class="stat-item">
+        <label>Score:</label>
+        <span class="score-display" id="scoreDisplay">0</span>
+      </div>
+      <div class="stat-item">
+        <label>Best:</label>
+        <span class="score-display" id="levelDisplay">0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div id="intro-overlay" class="overlay">
+      <div class="card" role="dialog" aria-modal="true">
+        <h1>⚽ Ball Rush 3D</h1>
+        <p class="muted">Navigate your ball through the winding track and avoid obstacles!</p>
+
+        <div style="display: flex; justify-content: center; gap: 12px; margin-top: 20px;">
+          <button id="play" class="btn-primary">💰 Pay & Play</button>
+        </div>
+        
+        <div class="instructions">
+          <h3>How to Play:</h3>
+          <ul>
+            <li>Tap/Click left or right to move the ball</li>
+            <li>Keep the ball on the track</li>
+            <li>Avoid red obstacles to survive</li>
+            <li>Each obstacle passed = 10 points</li>
+            <li>Game speeds up as you progress!</li>
+          </ul>
+        </div>
+        
+        <div id="status" class="hidden"></div>
+      </div>
+    </div>
+
+    <canvas id="canvas" width="400" height="600"></canvas>
+    
+    <span class="info">Tap left/right or use arrow buttons to dodge obstacles</span>
+    
+    <div id="controls">
+      <div class="control-row">
+        <div class="direction-controls">
+          <button id="btn-left" class="direction-btn">←</button>
+          <button id="btn-right" class="direction-btn">→</button>
+        </div>
+      </div>
+    </div>
+
+    <button id="play-again" class="hidden">💰 Pay & Play Again</button>
+  </div>
+
+<script type="module">
+import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk';
+sdk.actions.ready();
+
+const USE_BASE_SEPOLIA = false;
+const RECIPIENT = "0x5DE6945201D6B551cdB6F88bE0335A989833c446";
+const AMOUNT_ETH = "0.00001";
+
+const BASE_MAINNET = { chainId: "0x2105",  explorer: "https://basescan.org/tx/" };
+const BASE_SEPOLIA = { chainId: "0x14a34", explorer: "https://sepolia.basescan.org/tx/" };
+const TARGET = USE_BASE_SEPOLIA ? BASE_SEPOLIA : BASE_MAINNET;
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const statusEl = document.getElementById('status');
+const playBtn = document.getElementById('play');
+const playAgainBtn = document.getElementById('play-again');
+const scoreDisplay = document.getElementById('scoreDisplay');
+const bestDisplay = document.getElementById('levelDisplay');
+
+const showStatus = () => statusEl.classList.remove('hidden');
+const addLine = html => { showStatus(); statusEl.insertAdjacentHTML('beforeend', `<div>${html}</div>`); };
+const clearStatus = () => statusEl.innerHTML = '';
+const disable = (el, yes=true) => { if (el) el.disabled = yes; };
+
+function parseEther(x) {
+  const [w, f=""] = String(x).split('.');
+  const frac = (f + '0'.repeat(18)).slice(0, 18);
+  return '0x' + (BigInt(w) * 10n**18n + BigInt(frac)).toString(16);
+}
+
+async function getProvider() {
+  try {
+    const p = await sdk.wallet.getEthereumProvider();
+    if (p) return p;
+  } catch {}
+  return window.ethereum ?? null;
+}
+
+async function ensureChain(provider, chainId) {
+  const current = (await provider.request({ method: 'eth_chainId' }))?.toLowerCase();
+  if (current === chainId.toLowerCase()) return;
+  try {
+    await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId }] });
+  } catch (e) {
+    if (e?.code === 4902) {
+      await provider.request({ method: 'wallet_addEthereumChain', params: [{ chainId }] });
+      await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId }] });
+    } else { throw e; }
+  }
+}
+
+async function requiredPayment() {
+  clearStatus();
+  addLine(`<b>Step 1:</b> Locating wallet provider…`);
+  const provider = await getProvider();
+  if (!provider) {
+    addLine(`<span class="err">No wallet available.</span> Open in Farcaster or enable a wallet.`);
+    throw new Error('NO_PROVIDER');
+  }
+  addLine(`<span class="ok">Provider ready.</span>`);
+
+  addLine(`<b>Step 2:</b> Requesting accounts…`);
+  const [from] = await provider.request({ method: 'eth_requestAccounts' });
+  addLine(`<span class="ok">Account: ${from.slice(0,6)}…${from.slice(-4)}</span>`);
+
+  addLine(`<b>Step 3:</b> Switching to Base${USE_BASE_SEPOLIA?' Sepolia':''}…`);
+  await ensureChain(provider, TARGET.chainId);
+  addLine(`<span class="ok">On Base${USE_BASE_SEPOLIA?' Sepolia':''}.</span>`);
+
+  addLine(`<b>Step 4:</b> Sending ${AMOUNT_ETH} ETH to ${RECIPIENT.slice(0,6)}…${RECIPIENT.slice(-4)}…`);
+  const hash = await provider.request({
+    method: 'eth_sendTransaction',
+    params: [{ from, to: RECIPIENT, value: parseEther(AMOUNT_ETH) }]
+  });
+  addLine(`<span class="ok">TX sent.</span> <a target="_blank" rel="noopener" href="${TARGET.explorer}${hash}">View on Basescan</a>`);
+  return hash;
+}
+
+async function payThen(action, triggerBtn) {
+  try {
+    disable(triggerBtn, true);
+    await requiredPayment();
+    await action();
+  } catch (e) {
+    console.warn('Payment gate blocked action:', e);
+    addLine(`<span class="warn">Payment required. Please try again.</span>`);
+  } finally {
+    disable(triggerBtn, false);
+  }
+}
+
+let gameState = {
+  ball: { x: 200, y: 500, size: 15, velocityX: 0 },
+  obstacles: [],
+  track: { width: 120 },
+  score: 0,
+  bestScore: 0,
+  speed: 2,
+  obstacleTimer: 0,
+  gameActive: false,
+  gameOver: false
+};
+
+function drawBall() {
+  const b = gameState.ball;
+  
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  
+  // Shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+  ctx.beginPath();
+  ctx.ellipse(2, 2, b.size, b.size * 0.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Ball gradient
+  const gradient = ctx.createRadialGradient(-b.size * 0.3, -b.size * 0.3, 0, 0, 0, b.size);
+  gradient.addColorStop(0, '#8b5cf6');
+  gradient.addColorStop(0.5, '#7c3aed');
+  gradient.addColorStop(1, '#6d28d9');
+  
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(0, 0, b.size, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Shine
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+  ctx.beginPath();
+  ctx.arc(-b.size * 0.3, -b.size * 0.3, b.size * 0.3, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.restore();
+}
+
+function drawTrack() {
+  // Background
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Track
+  const laneLeft = canvas.width / 2 - gameState.track.width / 2;
+  const laneRight = canvas.width / 2 + gameState.track.width / 2;
+  
+  const woodGradient = ctx.createLinearGradient(laneLeft, 0, laneRight, 0);
+  woodGradient.addColorStop(0, '#2d1b4e');
+  woodGradient.addColorStop(0.5, '#4a1d7a');
+  woodGradient.addColorStop(1, '#2d1b4e');
+  
+  ctx.fillStyle = woodGradient;
+  ctx.fillRect(laneLeft, 0, gameState.track.width, canvas.height);
+  
+  // Track edges
+  ctx.strokeStyle = '#7c3aed';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(laneLeft, 0);
+  ctx.lineTo(laneLeft, canvas.height);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(laneRight, 0);
+  ctx.lineTo(laneRight, canvas.height);
+  ctx.stroke();
+}
+
+function createObstacle() {
+  const laneLeft = canvas.width / 2 - gameState.track.width / 2;
+  const laneRight = canvas.width / 2 + gameState.track.width / 2;
+  const patterns = [
+    [laneLeft + 30],
+    [laneRight - 30],
+    [canvas.width / 2],
+    [laneLeft + 30, laneRight - 30],
+    [laneLeft + 30, canvas.width / 2],
+    [canvas.width / 2, laneRight - 30]
+  ];
+  
+  const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+  
+  pattern.forEach(x => {
+    gameState.obstacles.push({
+      x: x,
+      y: -20,
+      size: 20,
+      speed: gameState.speed
+    });
+  });
+}
+
+function drawObstacles() {
+  gameState.obstacles.forEach(obs => {
+    ctx.fillStyle = '#ef4444';
+    ctx.shadowColor = '#dc2626';
+    ctx.shadowBlur = 10;
+    ctx.fillRect(obs.x - obs.size / 2, obs.y - obs.size / 2, obs.size, obs.size);
+    ctx.shadowBlur = 0;
+  });
+}
+
+function checkCollision() {
+  const b = gameState.ball;
+  const laneLeft = canvas.width / 2 - gameState.track.width / 2;
+  const laneRight = canvas.width / 2 + gameState.track.width / 2;
+  
+  // Wall collision
+  if (b.x - b.size < laneLeft || b.x + b.size > laneRight) {
+    return true;
+  }
+  
+  // Obstacle collision
+  for (let obs of gameState.obstacles) {
+    const dx = b.x - obs.x;
+    const dy = b.y - obs.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance < b.size + obs.size / 2) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+function gameLoop() {
+  if (!gameState.gameActive || gameState.gameOver) return;
+  
+  drawTrack();
+  
+  // Move obstacles
+  for (let i = gameState.obstacles.length - 1; i >= 0; i--) {
+    const obs = gameState.obstacles[i];
+    obs.y += obs.speed;
+    
+    // Remove off-screen obstacles
+    if (obs.y > canvas.height + 50) {
+      gameState.obstacles.splice(i, 1);
+      gameState.score += 10;
+      scoreDisplay.textContent = gameState.score;
+      
+      if (gameState.score > gameState.bestScore) {
+        gameState.bestScore = gameState.score;
+        bestDisplay.textContent = gameState.bestScore;
+      }
+      
+      // Increase speed
+      gameState.speed = Math.min(4, gameState.speed + 0.05);
+    }
+  }
+  
+  drawObstacles();
+  
+  // Ball physics
+  const b = gameState.ball;
+  b.x += b.velocityX;
+  b.velocityX *= 0.85;
+  
+  // Clamp ball
+  const laneLeft = canvas.width / 2 - gameState.track.width / 2 + b.size;
+  const laneRight = canvas.width / 2 + gameState.track.width / 2 - b.size;
+  b.x = Math.max(laneLeft, Math.min(laneRight, b.x));
+  
+  drawBall();
+  
+  // Spawn obstacles
+  gameState.obstacleTimer++;
+  const spawnRate = Math.max(40, 100 - gameState.score / 2);
+  if (gameState.obstacleTimer > spawnRate) {
+    createObstacle();
+    gameState.obstacleTimer = 0;
+  }
+  
+  // Check collision
+  if (checkCollision()) {
+    endGame();
+    return;
+  }
+  
+  requestAnimationFrame(gameLoop);
+}
+
+function endGame() {
+  gameState.gameOver = true;
+  gameState.gameActive = false;
+  
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  ctx.fillStyle = '#e7ecf0';
+  ctx.font = 'bold 48px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2 - 60);
+  
+  ctx.font = 'bold 36px system-ui';
+  ctx.fillStyle = '#a855f7';
+  ctx.fillText('Score: ' + gameState.score, canvas.width / 2, canvas.height / 2 - 10);
+  
+  if (gameState.score === gameState.bestScore && gameState.score > 0) {
+    ctx.font = 'bold 24px system-ui';
+    ctx.fillStyle = '#4ade80';
+    ctx.fillText('🏆 New Best!', canvas.width / 2, canvas.height / 2 + 30);
+  }
+  
+  ctx.font = '18px system-ui';
+  ctx.fillStyle = '#a8b6c1';
+  ctx.fillText('Click button below to play again', canvas.width / 2, canvas.height / 2 + 65);
+  
+  playAgainBtn.classList.remove('hidden');
+}
+
+function resetGame() {
+  gameState.ball = { x: 200, y: 500, size: 15, velocityX: 0 };
+  gameState.obstacles = [];
+  gameState.score = 0;
+  gameState.speed = 2;
+  gameState.obstacleTimer = 0;
+  gameState.gameOver = false;
+  scoreDisplay.textContent = '0';
+}
+
+// Input handlers
+canvas.addEventListener('click', (e) => {
+  if (!gameState.gameActive || gameState.gameOver) return;
+  
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  
+  if (x < canvas.width / 2) {
+    gameState.ball.velocityX = -8;
+  } else {
+    gameState.ball.velocityX = 8;
+  }
+});
+
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (!gameState.gameActive || gameState.gameOver) return;
+  
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+  const x = touch.clientX - rect.left;
+  
+  if (x < canvas.width / 2) {
+    gameState.ball.velocityX = -8;
+  } else {
+    gameState.ball.velocityX = 8;
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (!gameState.gameActive || gameState.gameOver) return;
+  
+  if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+    gameState.ball.velocityX = -8;
+  } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+    gameState.ball.velocityX = 8;
+  }
+});
+
+document.getElementById('btn-left').addEventListener('click', () => {
+  if (!gameState.gameActive || gameState.gameOver) return;
+  gameState.ball.velocityX = -8;
+});
+
+document.getElementById('btn-left').addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (!gameState.gameActive || gameState.gameOver) return;
+  gameState.ball.velocityX = -8;
+});
+
+document.getElementById('btn-right').addEventListener('click', () => {
+  if (!gameState.gameActive || gameState.gameOver) return;
+  gameState.ball.velocityX = 8;
+});
+
+document.getElementById('btn-right').addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (!gameState.gameActive || gameState.gameOver) return;
+  gameState.ball.velocityX = 8;
+});
+
+playBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  payThen(() => {
+    document.getElementById('intro-overlay').classList.add('hidden');
+    gameState.gameActive = true;
+    resetGame();
+    gameLoop();
+  }, playBtn);
+});
+
+playAgainBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  payThen(() => {
+    playAgainBtn.classList.add('hidden');
+    gameState.gameActive = true;
+    resetGame();
+    gameLoop();
+  }, playAgainBtn);
+});
+
+window.addEventListener('error', e => console.error('Error:', e.error || e));
+window.addEventListener('unhandledrejection', e => console.error('Unhandled promise:', e.reason));
+</script>
+</body>
+</html>
