@@ -6,13 +6,13 @@
   },
   "miniapp": {
     "version": "1",
-    "name": "Ball Rush 3D",
-    "iconUrl": "https://imgs2.dab3games.com/color-ball-run-game-ft.png",
+    "name": "Subway Surfers pixel",
+    "iconUrl": "https://static.wikia.nocookie.net/subwaysurf/images/c/c2/Pixeljake_surf_sandwich.png/revision/latest/scale-to-width-down/250?cb=20250321233841",
     "homeUrl": "https://gaming1-lemon.vercel.app/",
     "imageUrl": "https://raw.githubusercontent.com/enchanted-assets/public/main/images/tetris-cover.png",
     "buttonTitle": "Play Now",
     "splashImageUrl": "https://raw.githubusercontent.com/enchanted-assets/public/main/images/tetris-splash.png",
     "splashBackgroundColor": "#000000",
-    "description": "Navigate your ball through obstacles and score points in this exciting 3D game!"
+    "description": "Navigate through obstacles and score points in this exciting pixel game!"
   }
 }
