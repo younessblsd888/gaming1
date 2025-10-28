@@ -1,580 +1,223 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, RotateCcw, Heart } from 'lucide-react';
-
-const LANES = [-1, 0, 1]; // Left, Center, Right
-const GAME_SPEED = 5;
-const JUMP_POWER = 15;
-const GRAVITY = 0.8;
-
-const SubwaySurfers = () => {
-  const [gameState, setGameState] = useState('menu'); // menu, playing, paused, gameOver
-  const [score, setScore] = useState(0);
-  const [coins, setCoins] = useState(0);
-  const [highScore, setHighScore] = useState(0);
-  const [distance, setDistance] = useState(0);
-  const [lives, setLives] = useState(3);
-  
-  const [playerLane, setPlayerLane] = useState(0);
-  const [playerY, setPlayerY] = useState(0);
-  const [playerVelocityY, setPlayerVelocityY] = useState(0);
-  const [isJumping, setIsJumping] = useState(false);
-  
-  const [obstacles, setObstacles] = useState([]);
-  const [collectibles, setCollectibles] = useState([]);
-  const [powerUps, setPowerUps] = useState([]);
-  const [activePowerUp, setActivePowerUp] = useState(null);
-  const [powerUpTimer, setPowerUpTimer] = useState(0);
-  
-  const [isInvincible, setIsInvincible] = useState(false);
-  
-  const gameLoopRef = useRef();
-  const speedRef = useRef(GAME_SPEED);
-  const obstacleSpawnRef = useRef(0);
-  const coinSpawnRef = useRef(0);
-  const powerUpSpawnRef = useRef(0);
-
-  // Initialize high score from storage
-  useEffect(() => {
-    const loadHighScore = async () => {
-      try {
-        const result = await window.storage.get('subway-highscore');
-        if (result) {
-          setHighScore(parseInt(result.value));
-        }
-      } catch (error) {
-        console.log('No high score found');
-      }
-    };
-    loadHighScore();
-  }, []);
-
-  // Save high score
-  const saveHighScore = async (newScore) => {
-    try {
-      await window.storage.set('subway-highscore', newScore.toString());
-    } catch (error) {
-      console.error('Failed to save high score:', error);
-    }
-  };
-
-  const startGame = () => {
-    setGameState('playing');
-    setScore(0);
-    setCoins(0);
-    setDistance(0);
-    setLives(3);
-    setPlayerLane(0);
-    setPlayerY(0);
-    setPlayerVelocityY(0);
-    setIsJumping(false);
-    setObstacles([]);
-    setCollectibles([]);
-    setPowerUps([]);
-    setActivePowerUp(null);
-    setPowerUpTimer(0);
-    setIsInvincible(false);
-    speedRef.current = GAME_SPEED;
-    obstacleSpawnRef.current = 0;
-    coinSpawnRef.current = 0;
-    powerUpSpawnRef.current = 0;
-  };
-
-  const pauseGame = () => {
-    setGameState('paused');
-  };
-
-  const resumeGame = () => {
-    setGameState('playing');
-  };
-
-  const endGame = () => {
-    setGameState('gameOver');
-    if (score > highScore) {
-      setHighScore(score);
-      saveHighScore(score);
-    }
-  };
-
-  const loseLife = () => {
-    if (isInvincible) return;
-    
-    setLives(prev => {
-      const newLives = prev - 1;
-      if (newLives <= 0) {
-        endGame();
-        return 0;
-      }
-      return newLives;
-    });
-    
-    // Make player invincible for 2 seconds
-    setIsInvincible(true);
-    setTimeout(() => setIsInvincible(false), 2000);
-  };
-
-  const moveLane = useCallback((direction) => {
-    if (gameState !== 'playing') return;
-    setPlayerLane(prev => {
-      const newLane = Math.max(-1, Math.min(1, prev + direction));
-      return newLane;
-    });
-  }, [gameState]);
-
-  const jump = useCallback(() => {
-    if (gameState !== 'playing' || isJumping) return;
-    setIsJumping(true);
-    setPlayerVelocityY(JUMP_POWER);
-  }, [gameState, isJumping]);
-
-  // Keyboard controls - Arrow keys for lane change, Space/Up for jump
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'ArrowLeft') moveLane(-1);
-      if (e.key === 'ArrowRight') moveLane(1);
-      if (e.key === 'ArrowUp' || e.key === ' ') {
-        e.preventDefault();
-        jump();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [moveLane, jump]);
-
-  // Click to jump
-  const handleGameClick = () => {
-    if (gameState === 'playing') {
-      jump();
-    }
-  };
-
-  // Main game loop
-  useEffect(() => {
-    if (gameState !== 'playing') return;
-
-    gameLoopRef.current = setInterval(() => {
-      // Update distance and score
-      setDistance(prev => prev + 1);
-      setScore(prev => prev + 1);
-      
-      // Increase speed gradually
-      speedRef.current = GAME_SPEED + Math.floor(distance / 500) * 0.5;
-
-      // Player physics
-      if (isJumping) {
-        setPlayerY(prev => {
-          const newY = prev + playerVelocityY;
-          return newY;
-        });
-        setPlayerVelocityY(prev => {
-          const newVel = prev - GRAVITY;
-          return newVel;
-        });
-        
-        if (playerY <= 0) {
-          setPlayerY(0);
-          setPlayerVelocityY(0);
-          setIsJumping(false);
-        }
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Subway Surfers Mini</title>
+    <meta property="og:title" content="Subway Surfers Mini Game" />
+    <meta property="og:description" content="Jump, collect coins, and chase your highscore in this pixel mini-game!" />
+    <meta property="og:image" content="https://raw.githubusercontent.com/enchanted-assets/public/main/images/tetris-cover.png" />
+    <meta name="theme-color" content="#000000" />
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family: "Press Start 2P", monospace;
+        background: linear-gradient(180deg, #111, #333);
+        color: #fff;
+        text-align: center;
+        overflow: hidden;
       }
 
-      // Spawn obstacles
-      obstacleSpawnRef.current++;
-      if (obstacleSpawnRef.current > 100 - speedRef.current * 5) {
-        obstacleSpawnRef.current = 0;
-        const type = Math.random() > 0.5 ? 'barrier' : 'train';
-        const lane = LANES[Math.floor(Math.random() * LANES.length)];
-        setObstacles(prev => [...prev, { id: Date.now(), type, lane, y: 600, height: type === 'train' ? 80 : 50 }]);
+      .menu, .game, .gameover {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
       }
 
-      // Spawn coins
-      coinSpawnRef.current++;
-      if (coinSpawnRef.current > 40) {
-        coinSpawnRef.current = 0;
-        const lane = LANES[Math.floor(Math.random() * LANES.length)];
-        const pattern = Math.random();
-        if (pattern > 0.7) {
-          // Line of coins
-          for (let i = 0; i < 5; i++) {
-            setCollectibles(prev => [...prev, { id: Date.now() + i, type: 'coin', lane, y: 600 + i * 40, value: 1 }]);
-          }
-        } else {
-          setCollectibles(prev => [...prev, { id: Date.now(), type: 'coin', lane, y: 600, value: 1 }]);
-        }
+      .menu.active, .game.active, .gameover.active {
+        display: flex;
       }
 
-      // Spawn power-ups
-      powerUpSpawnRef.current++;
-      if (powerUpSpawnRef.current > 300) {
-        powerUpSpawnRef.current = 0;
-        const types = ['jetpack', 'magnet', 'multiplier'];
-        const type = types[Math.floor(Math.random() * types.length)];
-        const lane = LANES[Math.floor(Math.random() * LANES.length)];
-        setPowerUps(prev => [...prev, { id: Date.now(), type, lane, y: 600 }]);
+      .player {
+        position: absolute;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 60px;
+        background: #00f;
+        border-radius: 4px;
       }
 
-      // Move obstacles
-      setObstacles(prev => {
-        return prev.map(obs => ({ ...obs, y: obs.y - speedRef.current }))
-          .filter(obs => obs.y > -100);
-      });
-
-      // Move collectibles
-      setCollectibles(prev => {
-        return prev.map(col => ({ ...col, y: col.y - speedRef.current }))
-          .filter(col => col.y > -50);
-      });
-
-      // Move power-ups
-      setPowerUps(prev => {
-        return prev.map(pu => ({ ...pu, y: pu.y - speedRef.current }))
-          .filter(pu => pu.y > -50);
-      });
-
-      // Power-up timer
-      if (activePowerUp) {
-        setPowerUpTimer(prev => {
-          if (prev <= 0) {
-            setActivePowerUp(null);
-            return 0;
-          }
-          return prev - 16;
-        });
+      .coin {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background: gold;
+        border-radius: 50%;
       }
 
-      // Check collisions with obstacles
-      obstacles.forEach(obs => {
-        const playerHeight = 60;
-        const playerBottom = 400 - playerY;
-        const playerTop = playerBottom - playerHeight;
-        
-        if (obs.lane === playerLane && obs.y < 450 && obs.y > 350) {
-          if (obs.type === 'train' && playerTop < 400 - obs.height) {
-            if (activePowerUp !== 'jetpack' && !isInvincible) {
-              loseLife();
-              setObstacles(prev => prev.filter(o => o.id !== obs.id));
-            }
-          } else if (obs.type === 'barrier' && !isJumping) {
-            if (activePowerUp !== 'jetpack' && !isInvincible) {
-              loseLife();
-              setObstacles(prev => prev.filter(o => o.id !== obs.id));
-            }
-          }
-        }
-      });
-
-      // Check collisions with coins
-      collectibles.forEach(col => {
-        if (col.lane === playerLane && col.y < 450 && col.y > 350) {
-          setCoins(prev => prev + col.value);
-          const multiplier = activePowerUp === 'multiplier' ? 2 : 1;
-          setScore(prev => prev + 10 * multiplier);
-          setCollectibles(prev => prev.filter(c => c.id !== col.id));
-        }
-      });
-
-      // Check collisions with power-ups
-      powerUps.forEach(pu => {
-        if (pu.lane === playerLane && pu.y < 450 && pu.y > 350) {
-          setActivePowerUp(pu.type);
-          setPowerUpTimer(5000); // 5 seconds
-          setPowerUps(prev => prev.filter(p => p.id !== pu.id));
-        }
-      });
-
-      // Magnet power-up effect
-      if (activePowerUp === 'magnet') {
-        collectibles.forEach(col => {
-          if (Math.abs(col.lane - playerLane) <= 1 && col.y < 500 && col.y > 300) {
-            setCoins(prev => prev + col.value);
-            setScore(prev => prev + 10);
-            setCollectibles(prev => prev.filter(c => c.id !== col.id));
-          }
-        });
+      button {
+        margin-top: 20px;
+        background: #ff3b3b;
+        border: none;
+        color: #fff;
+        padding: 10px 20px;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
       }
 
-    }, 16);
+      button:hover {
+        background: #ff6363;
+      }
 
-    return () => clearInterval(gameLoopRef.current);
-  }, [gameState, isJumping, playerY, playerVelocityY, playerLane, obstacles, collectibles, powerUps, activePowerUp, distance, isInvincible]);
-
-  const getLaneX = (lane) => {
-    return lane * 100 + 150;
-  };
-
-  // Pixel art player component
-  const PixelPlayer = ({ isInvincible, activePowerUp }) => {
-    const opacity = isInvincible ? 0.5 : 1;
-    const glowColor = activePowerUp === 'jetpack' ? '#facc15' : activePowerUp === 'magnet' ? '#a855f7' : activePowerUp === 'multiplier' ? '#22c55e' : 'none';
-    
-    return (
-      <svg width="48" height="64" viewBox="0 0 16 21" style={{ opacity, filter: glowColor !== 'none' ? `drop-shadow(0 0 4px ${glowColor})` : 'none' }}>
-        {/* Head */}
-        <rect x="5" y="0" width="6" height="5" fill="#FFB6A3"/>
-        {/* Hair */}
-        <rect x="4" y="0" width="8" height="2" fill="#4A3829"/>
-        {/* Eyes */}
-        <rect x="6" y="2" width="1" height="1" fill="#000"/>
-        <rect x="9" y="2" width="1" height="1" fill="#000"/>
-        {/* Mouth */}
-        <rect x="7" y="4" width="2" height="1" fill="#000"/>
-        {/* Body */}
-        <rect x="4" y="5" width="8" height="7" fill="#3B82F6"/>
-        {/* Arms */}
-        <rect x="2" y="6" width="2" height="5" fill="#FFB6A3"/>
-        <rect x="12" y="6" width="2" height="5" fill="#FFB6A3"/>
-        {/* Legs */}
-        <rect x="5" y="12" width="2" height="5" fill="#1E3A8A"/>
-        <rect x="9" y="12" width="2" height="5" fill="#1E3A8A"/>
-        {/* Feet */}
-        <rect x="4" y="17" width="3" height="2" fill="#000"/>
-        <rect x="9" y="17" width="3" height="2" fill="#000"/>
-        {/* Running animation indicators */}
-        <rect x="3" y="8" width="1" height="2" fill="#FFB6A3" opacity="0.5"/>
-        <rect x="12" y="9" width="1" height="2" fill="#FFB6A3" opacity="0.5"/>
-      </svg>
-    );
-  };
-
-  return (
-    <div className="w-full h-screen bg-gradient-to-b from-blue-900 to-blue-700 flex flex-col items-center justify-center overflow-hidden select-none" style={{ imageRendering: 'pixelated' }}>
-      
-      {/* Menu Screen */}
-      {gameState === 'menu' && (
-        <div className="text-center z-10">
-          <h1 className="text-6xl font-bold text-yellow-400 mb-2" style={{ fontFamily: 'monospace', textShadow: '4px 4px 0px #000' }}>SUBWAY</h1>
-          <h2 className="text-5xl font-bold text-white mb-8" style={{ fontFamily: 'monospace', textShadow: '4px 4px 0px #000' }}>SURFERS</h2>
-          <div className="bg-black border-4 border-white rounded-lg p-6 mb-6" style={{ imageRendering: 'pixelated' }}>
-            <p className="text-2xl font-bold text-yellow-400 mb-2" style={{ fontFamily: 'monospace' }}>HIGH SCORE: {highScore}</p>
-          </div>
-          <button 
-            onClick={startGame}
-            className="bg-green-600 hover:bg-green-700 border-4 border-white text-white font-bold py-4 px-8 text-2xl" style={{ fontFamily: 'monospace', boxShadow: '4px 4px 0px #000' }}>
-            <Play className="inline mr-2" />
-            START
-          </button>
-        </div>
-      )}
-
-      {/* Game Screen */}
-      {(gameState === 'playing' || gameState === 'paused') && (
-        <>
-          {/* HUD */}
-          <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-start">
-            <div className="bg-black border-4 border-white text-yellow-400 px-4 py-2" style={{ fontFamily: 'monospace' }}>
-              <p className="text-sm">SCORE</p>
-              <p className="text-2xl font-bold">{score}</p>
-            </div>
-            
-            {/* Lives Display */}
-            <div className="bg-black border-4 border-white text-white px-4 py-2" style={{ fontFamily: 'monospace' }}>
-              <p className="text-sm mb-1">LIVES</p>
-              <div className="flex gap-2">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className={`w-6 h-6 ${i < lives ? 'bg-red-600' : 'bg-gray-600'} border-2 border-white`} style={{ imageRendering: 'pixelated' }}>
-                    {i < lives && <span className="text-white text-center block">❤</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <div className="bg-black border-4 border-white text-yellow-400 px-4 py-2" style={{ fontFamily: 'monospace' }}>
-              <p className="text-sm">COINS</p>
-              <p className="text-2xl font-bold">{coins}</p>
-            </div>
-            
-            <button 
-              onClick={pauseGame}
-              className="bg-blue-600 border-4 border-white text-white p-2">
-              <Pause size={24} />
-            </button>
-          </div>
-
-          {/* Power-up indicator */}
-          {activePowerUp && (
-            <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-20 bg-purple-600 border-4 border-white text-white px-4 py-2 font-bold" style={{ fontFamily: 'monospace' }}>
-              {activePowerUp.toUpperCase()} - {Math.ceil(powerUpTimer / 1000)}s
-            </div>
-          )}
-
-          {/* Invincibility indicator */}
-          {isInvincible && (
-            <div className="absolute top-32 left-1/2 transform -translate-x-1/2 z-20 bg-blue-600 border-4 border-white text-white px-4 py-2 font-bold animate-pulse" style={{ fontFamily: 'monospace' }}>
-              INVINCIBLE!
-            </div>
-          )}
-
-          {/* Game field - Click to jump */}
-          <div 
-            className="relative w-full h-full cursor-pointer" 
-            style={{ perspective: '500px' }}
-            onClick={handleGameClick}>
-            {/* Track lanes - pixelated style */}
-            <div className="absolute bottom-0 w-full h-full">
-              {LANES.map(lane => (
-                <div 
-                  key={lane}
-                  className="absolute h-full w-24 bg-gray-700 border-l-4 border-r-4 border-white border-opacity-50"
-                  style={{ left: `${getLaneX(lane) - 12}px`, imageRendering: 'pixelated' }}>
-                  {/* Track lines */}
-                  <div className="absolute w-full h-8 border-b-4 border-dashed border-white" style={{ top: '10%' }}></div>
-                  <div className="absolute w-full h-8 border-b-4 border-dashed border-white" style={{ top: '30%' }}></div>
-                  <div className="absolute w-full h-8 border-b-4 border-dashed border-white" style={{ top: '50%' }}></div>
-                  <div className="absolute w-full h-8 border-b-4 border-dashed border-white" style={{ top: '70%' }}></div>
-                </div>
-              ))}
-            </div>
-
-            {/* Obstacles - pixelated */}
-            {obstacles.map(obs => (
-              <div
-                key={obs.id}
-                className="absolute border-4 border-white"
-                style={{
-                  left: `${getLaneX(obs.lane) - 25}px`,
-                  bottom: `${obs.y}px`,
-                  width: '50px',
-                  height: `${obs.height}px`,
-                  transform: 'translateZ(0)',
-                  backgroundColor: obs.type === 'train' ? '#dc2626' : '#eab308',
-                  imageRendering: 'pixelated',
-                  boxShadow: '4px 4px 0px rgba(0,0,0,0.5)'
-                }}>
-                <div className="text-white text-center font-bold" style={{ fontFamily: 'monospace', fontSize: obs.type === 'train' ? '32px' : '24px' }}>
-                  {obs.type === 'train' ? '■' : '▲'}
-                </div>
-              </div>
-            ))}
-
-            {/* Collectibles - pixelated coins */}
-            {collectibles.map(col => (
-              <div
-                key={col.id}
-                className="absolute border-4 border-yellow-600 bg-yellow-400"
-                style={{
-                  left: `${getLaneX(col.lane) - 12}px`,
-                  bottom: `${col.y}px`,
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '50%',
-                  transform: 'translateZ(0)',
-                  imageRendering: 'pixelated',
-                  boxShadow: '2px 2px 0px rgba(0,0,0,0.5)'
-                }}>
-              </div>
-            ))}
-
-            {/* Power-ups - pixelated */}
-            {powerUps.map(pu => (
-              <div
-                key={pu.id}
-                className="absolute border-4 border-white"
-                style={{
-                  left: `${getLaneX(pu.lane) - 15}px`,
-                  bottom: `${pu.y}px`,
-                  width: '30px',
-                  height: '30px',
-                  transform: 'translateZ(0)',
-                  backgroundColor: pu.type === 'jetpack' ? '#facc15' : pu.type === 'magnet' ? '#a855f7' : '#22c55e',
-                  imageRendering: 'pixelated',
-                  boxShadow: '3px 3px 0px rgba(0,0,0,0.5)'
-                }}>
-                <div className="text-white text-center text-lg font-bold" style={{ fontFamily: 'monospace' }}>
-                  {pu.type === 'jetpack' && '↑'}
-                  {pu.type === 'magnet' && 'M'}
-                  {pu.type === 'multiplier' && 'x2'}
-                </div>
-              </div>
-            ))}
-
-            {/* Player - pixel art character */}
-            <div
-              className="absolute transition-all duration-100"
-              style={{
-                left: `${getLaneX(playerLane) - 24}px`,
-                bottom: `${400 + playerY}px`,
-                transform: 'translateZ(0)',
-                imageRendering: 'pixelated'
-              }}>
-              <PixelPlayer isInvincible={isInvincible} activePowerUp={activePowerUp} />
-            </div>
-          </div>
-
-          {/* Control Arrows at Bottom */}
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex gap-8">
-            {/* Left Arrow */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                moveLane(-1);
-              }}
-              className="bg-white border-4 border-black p-6 transform transition hover:scale-110 active:scale-95"
-              style={{ imageRendering: 'pixelated', boxShadow: '4px 4px 0px #000' }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="black">
-                <path d="M15 18l-6-6 6-6v12z"/>
-              </svg>
-            </button>
-
-            {/* Right Arrow */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                moveLane(1);
-              }}
-              className="bg-white border-4 border-black p-6 transform transition hover:scale-110 active:scale-95"
-              style={{ imageRendering: 'pixelated', boxShadow: '4px 4px 0px #000' }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="black">
-                <path d="M9 6l6 6-6 6V6z"/>
-              </svg>
-            </button>
-          </div>
-
-          {/* Pause overlay */}
-          {gameState === 'paused' && (
-            <div className="absolute inset-0 bg-black bg-opacity-90 flex items-center justify-center z-30">
-              <div className="text-center">
-                <h2 className="text-5xl font-bold text-white mb-8" style={{ fontFamily: 'monospace', textShadow: '4px 4px 0px #000' }}>PAUSED</h2>
-                <button 
-                  onClick={resumeGame}
-                  className="bg-green-600 border-4 border-white text-white font-bold py-3 px-6 text-xl mr-4" style={{ fontFamily: 'monospace', boxShadow: '4px 4px 0px #000' }}>
-                  <Play className="inline mr-2" />
-                  RESUME
-                </button>
-                <button 
-                  onClick={() => setGameState('menu')}
-                  className="bg-red-600 border-4 border-white text-white font-bold py-3 px-6 text-xl" style={{ fontFamily: 'monospace', boxShadow: '4px 4px 0px #000' }}>
-                  QUIT
-                </button>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Game Over Screen */}
-      {gameState === 'gameOver' && (
-        <div className="text-center z-10">
-          <h2 className="text-6xl font-bold text-red-600 mb-4" style={{ fontFamily: 'monospace', textShadow: '4px 4px 0px #000' }}>GAME OVER!</h2>
-          <div className="bg-black border-4 border-white p-8 mb-6" style={{ imageRendering: 'pixelated' }}>
-            <p className="text-3xl font-bold text-yellow-400 mb-2" style={{ fontFamily: 'monospace' }}>SCORE: {score}</p>
-            <p className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'monospace' }}>COINS: {coins}</p>
-            <p className="text-xl text-gray-400" style={{ fontFamily: 'monospace' }}>HIGH: {highScore}</p>
-          </div>
-          <button 
-            onClick={startGame}
-            className="bg-green-600 border-4 border-white text-white font-bold py-3 px-6 text-xl mr-4" style={{ fontFamily: 'monospace', boxShadow: '4px 4px 0px #000' }}>
-            <RotateCcw className="inline mr-2" />
-            RETRY
-          </button>
-          <button 
-            onClick={() => setGameState('menu')}
-            className="bg-blue-600 border-4 border-white text-white font-bold py-3 px-6 text-xl" style={{ fontFamily: 'monospace', boxShadow: '4px 4px 0px #000' }}>
-            MENU
-          </button>
-        </div>
-      )}
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Menu Screen -->
+    <div id="menu" class="menu active">
+      <h1>SUBWAY SURFERS MINI</h1>
+      <p id="highscoreText">HIGH SCORE: 0</p>
+      <button onclick="startGame()">START</button>
     </div>
-  );
-};
 
-export default SubwaySurfers;
+    <!-- Game Screen -->
+    <div id="game" class="game">
+      <canvas id="gameCanvas" width="400" height="600"></canvas>
+      <div id="player" class="player"></div>
+      <p id="scoreText" style="position: absolute; top: 20px; left: 20px;">SCORE: 0</p>
+      <p id="coinsText" style="position: absolute; top: 50px; left: 20px;">COINS: 0</p>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameover" class="gameover">
+      <h1>GAME OVER</h1>
+      <p id="finalScore">SCORE: 0</p>
+      <button onclick="startGame()">RETRY</button>
+    </div>
+
+    <script>
+      let score = 0;
+      let coins = 0;
+      let highscore = parseInt(localStorage.getItem("subway-highscore") || "0");
+      let gameRunning = false;
+      let coinElements = [];
+      let player;
+      let playerY = 0;
+      let velocity = 0;
+      let gravity = 0.8;
+      let jumpPower = -12;
+      let gameLoop;
+      let ctx;
+
+      const menu = document.getElementById("menu");
+      const game = document.getElementById("game");
+      const gameover = document.getElementById("gameover");
+      const scoreText = document.getElementById("scoreText");
+      const coinsText = document.getElementById("coinsText");
+      const highscoreText = document.getElementById("highscoreText");
+      const finalScore = document.getElementById("finalScore");
+      const canvas = document.getElementById("gameCanvas");
+
+      ctx = canvas.getContext("2d");
+      highscoreText.textContent = "HIGH SCORE: " + highscore;
+
+      function startGame() {
+        score = 0;
+        coins = 0;
+        playerY = 0;
+        velocity = 0;
+        gameRunning = true;
+        coinElements.forEach(c => c.remove());
+        coinElements = [];
+
+        menu.classList.remove("active");
+        gameover.classList.remove("active");
+        game.classList.add("active");
+
+        player = document.getElementById("player");
+        player.style.bottom = "100px";
+
+        spawnCoins();
+        gameLoop = setInterval(updateGame, 30);
+      }
+
+      function spawnCoins() {
+        for (let i = 0; i < 3; i++) {
+          const coin = document.createElement("div");
+          coin.classList.add("coin");
+          coin.style.left = Math.random() * 360 + "px";
+          coin.style.top = Math.random() * 400 + "px";
+          game.appendChild(coin);
+          coinElements.push(coin);
+        }
+      }
+
+      function updateGame() {
+        score++;
+        scoreText.textContent = "SCORE: " + score;
+        coinsText.textContent = "COINS: " + coins;
+
+        velocity += gravity;
+        playerY += velocity;
+        if (playerY > 0) {
+          playerY = 0;
+          velocity = 0;
+        }
+
+        player.style.bottom = 100 + playerY + "px";
+
+        // Collision detection
+        coinElements.forEach((coin, i) => {
+          const coinRect = coin.getBoundingClientRect();
+          const playerRect = player.getBoundingClientRect();
+          if (
+            coinRect.left < playerRect.right &&
+            coinRect.right > playerRect.left &&
+            coinRect.top < playerRect.bottom &&
+            coinRect.bottom > playerRect.top
+          ) {
+            coins++;
+            coin.remove();
+            coinElements.splice(i, 1);
+            spawnCoins();
+          }
+        });
+
+        // End game condition
+        if (score > 9999) endGame();
+      }
+
+      function endGame() {
+        clearInterval(gameLoop);
+        gameRunning = false;
+        game.classList.remove("active");
+        gameover.classList.add("active");
+        finalScore.textContent = "SCORE: " + score;
+
+        if (score > highscore) {
+          highscore = score;
+          localStorage.setItem("subway-highscore", highscore.toString());
+        }
+
+        highscoreText.textContent = "HIGH SCORE: " + highscore;
+      }
+
+      document.body.addEventListener("keydown", (e) => {
+        if (e.code === "Space" && playerY === 0) {
+          velocity = jumpPower;
+        }
+      });
+
+      document.body.addEventListener("click", () => {
+        if (gameRunning && playerY === 0) {
+          velocity = jumpPower;
+        }
+      });
+    </script>
+  </body>
+</html>
