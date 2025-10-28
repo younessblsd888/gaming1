@@ -1,13 +1,13 @@
 {
   "accountAssociation": {
-    "header": "eyJmaWQiOjMzNTMxNSwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDE4OTZBNDY3MzU5Njg0YWZEZEZlMDkxZDgzQjk0NDFlZUFhQmNiODAifQ",
-    "payload": "eyJkb21haW4iOiJnYW1pbmcxLWxlbW9uLnZlcmNlbC5hcHAifQ",
-    "signature": "RhQPIBex7p50lyRsFfCBLzvCm4ZYClRLL6gn9Vfo+XE+sIjc8krP7U0lsBYiDW8PZzD9I7UmCw9w6576w9DTMRs="
+    "header": "eyJmaWQiOiJmZWFkZXIifQ==",
+    "payload": "eyJtaW5pYXBwIjoiU3Vid2F5IFN1cmZlcnMgTWluaSJ9",
+    "signature": "RANDOM_SIGNATURE_EXAMPLE=="
   },
   "miniapp": {
     "version": "1",
-    "name": "Subway Surfers pixel",
-    "iconUrl": "https://static.wikia.nocookie.net/subwaysurf/images/c/c2/Pixeljake_surf_sandwich.png/revision/latest/scale-to-width-down/250?cb=20250321233841",
+    "name": "Subway Surfers Mini",
+    "iconUrl": "https://static.wikia.nocookie.net/subwaysurf/images/c/c2/Pixeljake_surf_sandwich.png/revision/latest/scale-to-width-down/250",
     "homeUrl": "https://gaming1-lemon.vercel.app/",
     "imageUrl": "https://raw.githubusercontent.com/enchanted-assets/public/main/images/tetris-cover.png",
     "buttonTitle": "Play Now",
