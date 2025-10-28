@@ -3,221 +3,266 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Subway Surfers Mini</title>
-    <meta property="og:title" content="Subway Surfers Mini Game" />
-    <meta property="og:description" content="Jump, collect coins, and chase your highscore in this pixel mini-game!" />
-    <meta property="og:image" content="https://raw.githubusercontent.com/enchanted-assets/public/main/images/tetris-cover.png" />
-    <meta name="theme-color" content="#000000" />
+    <title>Subway Surfers React Game</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- React + ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+    <!-- Lucide Icons (for Play/Pause/etc.) -->
+    <script type="module" src="https://unpkg.com/lucide@latest"></script>
+
     <style>
       html, body {
         margin: 0;
         padding: 0;
-        height: 100%;
-        font-family: "Press Start 2P", monospace;
-        background: linear-gradient(180deg, #111, #333);
-        color: #fff;
-        text-align: center;
         overflow: hidden;
+        background: #1e3a8a;
       }
-
-      .menu, .game, .gameover {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        display: none;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-      }
-
-      .menu.active, .game.active, .gameover.active {
-        display: flex;
-      }
-
-      .player {
-        position: absolute;
-        bottom: 100px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 40px;
-        height: 60px;
-        background: #00f;
-        border-radius: 4px;
-      }
-
-      .coin {
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        background: gold;
-        border-radius: 50%;
-      }
-
       button {
-        margin-top: 20px;
-        background: #ff3b3b;
-        border: none;
-        color: #fff;
-        padding: 10px 20px;
         cursor: pointer;
-        font-size: 14px;
-        border-radius: 5px;
       }
-
-      button:hover {
-        background: #ff6363;
-      }
-
-      canvas {
-        position: absolute;
-        top: 0;
-        left: 0;
+      svg {
+        image-rendering: pixelated;
       }
     </style>
   </head>
   <body>
-    <!-- Menu Screen -->
-    <div id="menu" class="menu active">
-      <h1>SUBWAY SURFERS MINI</h1>
-      <p id="highscoreText">HIGH SCORE: 0</p>
-      <button onclick="startGame()">START</button>
-    </div>
+    <div id="root"></div>
 
-    <!-- Game Screen -->
-    <div id="game" class="game">
-      <canvas id="gameCanvas" width="400" height="600"></canvas>
-      <div id="player" class="player"></div>
-      <p id="scoreText" style="position: absolute; top: 20px; left: 20px;">SCORE: 0</p>
-      <p id="coinsText" style="position: absolute; top: 50px; left: 20px;">COINS: 0</p>
-    </div>
+    <script type="text/babel">
+      const { useState, useEffect, useRef, useCallback } = React;
 
-    <!-- Game Over Screen -->
-    <div id="gameover" class="gameover">
-      <h1>GAME OVER</h1>
-      <p id="finalScore">SCORE: 0</p>
-      <button onclick="startGame()">RETRY</button>
-    </div>
+      const LANES = [-1, 0, 1];
+      const GAME_SPEED = 5;
+      const JUMP_POWER = 15;
+      const GRAVITY = 0.8;
 
-    <script>
-      let score = 0;
-      let coins = 0;
-      let highscore = parseInt(localStorage.getItem("subway-highscore") || "0");
-      let gameRunning = false;
-      let coinElements = [];
-      let player;
-      let playerY = 0;
-      let velocity = 0;
-      let gravity = 0.8;
-      let jumpPower = -12;
-      let gameLoop;
-      let ctx;
+      const SubwaySurfers = () => {
+        const [gameState, setGameState] = useState('menu');
+        const [score, setScore] = useState(0);
+        const [coins, setCoins] = useState(0);
+        const [highScore, setHighScore] = useState(
+          parseInt(localStorage.getItem('subway-highscore') || '0')
+        );
+        const [distance, setDistance] = useState(0);
+        const [lives, setLives] = useState(3);
 
-      const menu = document.getElementById("menu");
-      const game = document.getElementById("game");
-      const gameover = document.getElementById("gameover");
-      const scoreText = document.getElementById("scoreText");
-      const coinsText = document.getElementById("coinsText");
-      const highscoreText = document.getElementById("highscoreText");
-      const finalScore = document.getElementById("finalScore");
-      const canvas = document.getElementById("gameCanvas");
+        const [playerLane, setPlayerLane] = useState(0);
+        const [playerY, setPlayerY] = useState(0);
+        const [playerVelocityY, setPlayerVelocityY] = useState(0);
+        const [isJumping, setIsJumping] = useState(false);
 
-      ctx = canvas.getContext("2d");
-      highscoreText.textContent = "HIGH SCORE: " + highscore;
+        const [obstacles, setObstacles] = useState([]);
+        const [collectibles, setCollectibles] = useState([]);
+        const [powerUps, setPowerUps] = useState([]);
+        const [activePowerUp, setActivePowerUp] = useState(null);
+        const [powerUpTimer, setPowerUpTimer] = useState(0);
+        const [isInvincible, setIsInvincible] = useState(false);
 
-      function startGame() {
-        score = 0;
-        coins = 0;
-        playerY = 0;
-        velocity = 0;
-        gameRunning = true;
-        coinElements.forEach(c => c.remove());
-        coinElements = [];
+        const gameLoopRef = useRef();
+        const speedRef = useRef(GAME_SPEED);
+        const obstacleSpawnRef = useRef(0);
+        const coinSpawnRef = useRef(0);
+        const powerUpSpawnRef = useRef(0);
 
-        menu.classList.remove("active");
-        gameover.classList.remove("active");
-        game.classList.add("active");
+        const startGame = () => {
+          setGameState('playing');
+          setScore(0);
+          setCoins(0);
+          setDistance(0);
+          setLives(3);
+          setPlayerLane(0);
+          setPlayerY(0);
+          setPlayerVelocityY(0);
+          setIsJumping(false);
+          setObstacles([]);
+          setCollectibles([]);
+          setPowerUps([]);
+          setActivePowerUp(null);
+          setPowerUpTimer(0);
+          setIsInvincible(false);
+          speedRef.current = GAME_SPEED;
+        };
 
-        player = document.getElementById("player");
-        player.style.bottom = "100px";
+        const pauseGame = () => setGameState('paused');
+        const resumeGame = () => setGameState('playing');
 
-        spawnCoins();
-        gameLoop = setInterval(updateGame, 30);
-      }
-
-      function spawnCoins() {
-        for (let i = 0; i < 3; i++) {
-          const coin = document.createElement("div");
-          coin.classList.add("coin");
-          coin.style.left = Math.random() * 360 + "px";
-          coin.style.top = Math.random() * 400 + "px";
-          game.appendChild(coin);
-          coinElements.push(coin);
-        }
-      }
-
-      function updateGame() {
-        score++;
-        scoreText.textContent = "SCORE: " + score;
-        coinsText.textContent = "COINS: " + coins;
-
-        velocity += gravity;
-        playerY += velocity;
-        if (playerY > 0) {
-          playerY = 0;
-          velocity = 0;
-        }
-
-        player.style.bottom = 100 + playerY + "px";
-
-        // Collision detection
-        coinElements.forEach((coin, i) => {
-          const coinRect = coin.getBoundingClientRect();
-          const playerRect = player.getBoundingClientRect();
-          if (
-            coinRect.left < playerRect.right &&
-            coinRect.right > playerRect.left &&
-            coinRect.top < playerRect.bottom &&
-            coinRect.bottom > playerRect.top
-          ) {
-            coins++;
-            coin.remove();
-            coinElements.splice(i, 1);
-            spawnCoins();
+        const endGame = () => {
+          setGameState('gameOver');
+          if (score > highScore) {
+            localStorage.setItem('subway-highscore', score.toString());
+            setHighScore(score);
           }
-        });
+        };
 
-        // End game condition
-        if (score > 9999) endGame();
-      }
+        const loseLife = () => {
+          if (isInvincible) return;
+          setLives((prev) => {
+            const newLives = prev - 1;
+            if (newLives <= 0) {
+              endGame();
+              return 0;
+            }
+            return newLives;
+          });
+          setIsInvincible(true);
+          setTimeout(() => setIsInvincible(false), 2000);
+        };
 
-      function endGame() {
-        clearInterval(gameLoop);
-        gameRunning = false;
-        game.classList.remove("active");
-        gameover.classList.add("active");
-        finalScore.textContent = "SCORE: " + score;
+        const moveLane = useCallback(
+          (dir) => {
+            if (gameState !== 'playing') return;
+            setPlayerLane((prev) => Math.max(-1, Math.min(1, prev + dir)));
+          },
+          [gameState]
+        );
 
-        if (score > highscore) {
-          highscore = score;
-          localStorage.setItem("subway-highscore", highscore.toString());
-        }
+        const jump = useCallback(() => {
+          if (gameState !== 'playing' || isJumping) return;
+          setIsJumping(true);
+          setPlayerVelocityY(JUMP_POWER);
+        }, [gameState, isJumping]);
 
-        highscoreText.textContent = "HIGH SCORE: " + highscore;
-      }
+        useEffect(() => {
+          const handleKey = (e) => {
+            if (e.key === 'ArrowLeft') moveLane(-1);
+            if (e.key === 'ArrowRight') moveLane(1);
+            if (e.key === 'ArrowUp' || e.key === ' ') {
+              e.preventDefault();
+              jump();
+            }
+          };
+          window.addEventListener('keydown', handleKey);
+          return () => window.removeEventListener('keydown', handleKey);
+        }, [moveLane, jump]);
 
-      document.body.addEventListener("keydown", (e) => {
-        if (e.code === "Space" && playerY === 0) {
-          velocity = jumpPower;
-        }
-      });
+        const handleGameClick = () => {
+          if (gameState === 'playing') jump();
+        };
 
-      document.body.addEventListener("click", () => {
-        if (gameRunning && playerY === 0) {
-          velocity = jumpPower;
-        }
-      });
+        // Main game loop
+        useEffect(() => {
+          if (gameState !== 'playing') return;
+          gameLoopRef.current = setInterval(() => {
+            setDistance((d) => d + 1);
+            setScore((s) => s + 1);
+            speedRef.current = GAME_SPEED + Math.floor(distance / 500) * 0.5;
+
+            // gravity/jump
+            if (isJumping) {
+              setPlayerY((y) => y + playerVelocityY);
+              setPlayerVelocityY((vy) => vy - GRAVITY);
+              if (playerY <= 0) {
+                setPlayerY(0);
+                setPlayerVelocityY(0);
+                setIsJumping(false);
+              }
+            }
+
+            // obstacle spawn
+            obstacleSpawnRef.current++;
+            if (obstacleSpawnRef.current > 100 - speedRef.current * 5) {
+              obstacleSpawnRef.current = 0;
+              const type = Math.random() > 0.5 ? 'barrier' : 'train';
+              const lane = LANES[Math.floor(Math.random() * LANES.length)];
+              setObstacles((prev) => [
+                ...prev,
+                { id: Date.now(), type, lane, y: 600, height: type === 'train' ? 80 : 50 },
+              ]);
+            }
+
+            // move objects
+            setObstacles((prev) =>
+              prev.map((o) => ({ ...o, y: o.y - speedRef.current })).filter((o) => o.y > -100)
+            );
+          }, 16);
+          return () => clearInterval(gameLoopRef.current);
+        }, [gameState, isJumping, playerY, playerVelocityY, distance]);
+
+        const getLaneX = (lane) => lane * 100 + 150;
+
+        const PixelPlayer = ({ isInvincible }) => (
+          <svg width="48" height="64" viewBox="0 0 16 21" style={{ opacity: isInvincible ? 0.5 : 1 }}>
+            <rect x="5" y="0" width="6" height="5" fill="#FFB6A3" />
+            <rect x="4" y="0" width="8" height="2" fill="#4A3829" />
+            <rect x="6" y="2" width="1" height="1" fill="#000" />
+            <rect x="9" y="2" width="1" height="1" fill="#000" />
+            <rect x="7" y="4" width="2" height="1" fill="#000" />
+            <rect x="4" y="5" width="8" height="7" fill="#3B82F6" />
+          </svg>
+        );
+
+        return (
+          <div
+            className="w-full h-screen bg-gradient-to-b from-blue-900 to-blue-700 flex flex-col items-center justify-center overflow-hidden select-none"
+            onClick={handleGameClick}
+          >
+            {gameState === 'menu' && (
+              <div className="text-center">
+                <h1 className="text-6xl font-bold text-yellow-400 mb-2" style={{ fontFamily: 'monospace' }}>SUBWAY</h1>
+                <h2 className="text-5xl font-bold text-white mb-8" style={{ fontFamily: 'monospace' }}>SURFERS</h2>
+                <button
+                  onClick={startGame}
+                  className="bg-green-600 hover:bg-green-700 border-4 border-white text-white font-bold py-4 px-8 text-2xl"
+                >
+                  ▶ START
+                </button>
+              </div>
+            )}
+
+            {gameState === 'playing' && (
+              <div className="relative w-full h-full">
+                <div
+                  className="absolute"
+                  style={{
+                    left: `${getLaneX(playerLane) - 24}px`,
+                    bottom: `${400 + playerY}px`,
+                  }}
+                >
+                  <PixelPlayer isInvincible={isInvincible} />
+                </div>
+
+                {obstacles.map((o) => (
+                  <div
+                    key={o.id}
+                    className="absolute border-4 border-white"
+                    style={{
+                      left: `${getLaneX(o.lane) - 25}px`,
+                      bottom: `${o.y}px`,
+                      width: '50px',
+                      height: `${o.height}px`,
+                      backgroundColor: o.type === 'train' ? '#dc2626' : '#eab308',
+                    }}
+                  />
+                ))}
+
+                <div className="absolute top-4 left-4 bg-black text-yellow-400 border-4 border-white px-4 py-2 font-mono">
+                  Score: {score}
+                </div>
+              </div>
+            )}
+
+            {gameState === 'gameOver' && (
+              <div className="text-center text-white">
+                <h2 className="text-5xl mb-4 font-bold">GAME OVER</h2>
+                <p className="text-2xl mb-4">Score: {score}</p>
+                <button
+                  onClick={startGame}
+                  className="bg-green-600 border-4 border-white text-white py-2 px-6 font-bold"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      };
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<SubwaySurfers />);
     </script>
   </body>
 </html>
