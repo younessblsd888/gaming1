@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>🏃 Subway Surfers — Farcaster Mini App</title>
+<title>⭕ Tic Tac Toe — Farcaster Mini App</title>
 <style>
   :root { color-scheme: dark; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,20 +31,14 @@
   #status .warn { color: #fbbf24; }
   #status .err { color: #f87171; }
   #status a { color: #86c6ff; text-decoration: none; }
-  #play-again {
-    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
-    padding: 16px 32px; background: linear-gradient(135deg, #ff8c42, #ff6b1a); color: #fff;
-    border: none; border-radius: 12px; font-weight: 900; font-size: 18px; cursor: pointer;
-    box-shadow: 0 10px 40px rgba(255,107,26,0.5); z-index: 50;
-  }
   #root { width: 100vw; height: 100vh; }
 </style>
 </head>
 <body>
   <div id="intro-overlay" class="overlay">
     <div class="card" role="dialog" aria-modal="true">
-      <h1>🏃 Play Subway Surfers</h1>
-      <p class="muted">A small Base transfer is required to start playing (mobile & desktop supported).</p>
+      <h1>⭕ Play Tic Tac Toe</h1>
+      <p class="muted">Challenge a friend or play against AI. A small Base transfer is required to start playing.</p>
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
         <button id="skip-payment" style="padding: 8px 16px; background: #1f2a32; color: #9aa7b1; border: 1px solid #1f2a32; border-radius: 8px; font-size: 12px; cursor: pointer;">Skip (Test Mode)</button>
         <button id="play" class="btn-primary">💰 Pay & Play</button>
@@ -54,7 +48,6 @@
   </div>
 
   <div id="root"></div>
-  <button id="play-again" class="hidden">💰 Pay & Play Again</button>
 
 <script type="module">
 import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk';
@@ -69,7 +62,6 @@ const TARGET = USE_BASE_SEPOLIA ? BASE_SEPOLIA : BASE_MAINNET;
 
 const statusEl = document.getElementById('status');
 const playBtn = document.getElementById('play');
-const playAgainBtn = document.getElementById('play-again');
 
 const showStatus = () => statusEl.classList.remove('hidden');
 const addLine = html => { showStatus(); statusEl.insertAdjacentHTML('beforeend', `<div>${html}</div>`); };
@@ -169,393 +161,300 @@ window.addEventListener('unhandledrejection', e => console.error('Unhandled prom
 <script src="https://cdn.tailwindcss.com"></script>
 
 <script type="text/babel">
-const { useState, useEffect, useRef, useCallback } = React;
-const LANES = [-1, 0, 1];
-const GAME_SPEED = 5;
-const JUMP_POWER = 15;
-const GRAVITY = 0.8;
+const { useState, useEffect } = React;
 
-const SubwaySurfers = () => {
-  const [gameState, setGameState] = useState('playing');
-  const [score, setScore] = useState(0);
-  const [coins, setCoins] = useState(0);
-  const [highScore, setHighScore] = useState(0);
-  const [distance, setDistance] = useState(0);
-  const [lives, setLives] = useState(3);
-  const [playerLane, setPlayerLane] = useState(0);
-  const [playerY, setPlayerY] = useState(0);
-  const [isJumping, setIsJumping] = useState(false);
-  const [obstacles, setObstacles] = useState([]);
-  const [collectibles, setCollectibles] = useState([]);
-  const [powerUps, setPowerUps] = useState([]);
-  const [activePowerUp, setActivePowerUp] = useState(null);
-  const [powerUpTimer, setPowerUpTimer] = useState(0);
-  const [isInvincible, setIsInvincible] = useState(false);
-  
-  const speedRef = useRef(GAME_SPEED);
-  const obstacleSpawnRef = useRef(0);
-  const coinSpawnRef = useRef(0);
-  const powerUpSpawnRef = useRef(0);
-  const playerVelocityYRef = useRef(0);
+const TicTacToe = () => {
+  const [board, setBoard] = useState(Array(9).fill(null));
+  const [isXNext, setIsXNext] = useState(true);
+  const [gameMode, setGameMode] = useState(null);
+  const [winner, setWinner] = useState(null);
+  const [winningLine, setWinningLine] = useState([]);
+  const [scores, setScores] = useState({ X: 0, O: 0, draws: 0 });
+  const [isThinking, setIsThinking] = useState(false);
 
   useEffect(() => {
-    const loadHighScore = async () => {
+    const loadScores = async () => {
       try {
         if (window.storage) {
-          const result = await window.storage.get('subway-highscore');
-          if (result) setHighScore(parseInt(result.value));
+          const result = await window.storage.get('tictactoe-scores');
+          if (result) {
+            setScores(JSON.parse(result.value));
+          }
         }
       } catch (error) {
-        console.log('No high score found');
+        console.log('No scores found');
       }
     };
-    loadHighScore();
+    loadScores();
   }, []);
 
-  const saveHighScore = async (newScore) => {
+  const saveScores = async (newScores) => {
     try {
       if (window.storage) {
-        await window.storage.set('subway-highscore', newScore.toString());
+        await window.storage.set('tictactoe-scores', JSON.stringify(newScores));
       }
     } catch (error) {
-      console.error('Failed to save high score:', error);
+      console.error('Failed to save scores:', error);
     }
   };
 
-  const endGame = useCallback(() => {
-    setGameState('gameOver');
-    const playAgainBtn = document.getElementById('play-again');
-    if (playAgainBtn) playAgainBtn.classList.remove('hidden');
-  }, []);
-
-  const loseLife = useCallback(() => {
-    setIsInvincible(prev => {
-      if (prev) return prev;
-      
-      setLives(currentLives => {
-        const newLives = currentLives - 1;
-        if (newLives <= 0) {
-          setTimeout(() => endGame(), 100);
-          return 0;
-        }
-        return newLives;
-      });
-      
-      setTimeout(() => setIsInvincible(false), 2000);
-      return true;
-    });
-  }, [endGame]);
-
-  const moveLane = useCallback((direction) => {
-    setGameState(state => {
-      if (state !== 'playing') return state;
-      setPlayerLane(prev => Math.max(-1, Math.min(1, prev + direction)));
-      return state;
-    });
-  }, []);
-
-  const jump = useCallback(() => {
-    setGameState(state => {
-      if (state !== 'playing') return state;
-      setIsJumping(jumping => {
-        if (jumping) return jumping;
-        playerVelocityYRef.current = JUMP_POWER;
-        return true;
-      });
-      return state;
-    });
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'ArrowLeft') moveLane(-1);
-      if (e.key === 'ArrowRight') moveLane(1);
-      if (e.key === 'ArrowUp' || e.key === ' ') {
-        e.preventDefault();
-        jump();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [moveLane, jump]);
-
-  const handleGameClick = () => {
-    if (gameState === 'playing') jump();
-  };
-
-  useEffect(() => {
-    if (gameState === 'gameOver' && score > highScore) {
-      setHighScore(score);
-      saveHighScore(score);
-    }
-  }, [gameState, score, highScore]);
-
-  useEffect(() => {
-    if (gameState !== 'playing') return;
-
-    const gameLoop = setInterval(() => {
-      setDistance(prev => {
-        const newDist = prev + 1;
-        speedRef.current = GAME_SPEED + Math.floor(newDist / 500) * 0.5;
-        return newDist;
-      });
-      
-      setScore(prev => prev + 1);
-
-      setPlayerY(prev => {
-        const velocity = playerVelocityYRef.current;
-        const newY = prev + velocity;
-        playerVelocityYRef.current = velocity - GRAVITY;
-        
-        if (newY <= 0) {
-          playerVelocityYRef.current = 0;
-          setIsJumping(false);
-          return 0;
-        }
-        return newY;
-      });
-
-      obstacleSpawnRef.current++;
-      if (obstacleSpawnRef.current > 100 - speedRef.current * 5) {
-        obstacleSpawnRef.current = 0;
-        const type = Math.random() > 0.5 ? 'barrier' : 'train';
-        const lane = LANES[Math.floor(Math.random() * LANES.length)];
-        setObstacles(prev => [...prev, { id: Date.now(), type, lane, y: 600, height: type === 'train' ? 80 : 50 }]);
-      }
-
-      coinSpawnRef.current++;
-      if (coinSpawnRef.current > 40) {
-        coinSpawnRef.current = 0;
-        const lane = LANES[Math.floor(Math.random() * LANES.length)];
-        const pattern = Math.random();
-        if (pattern > 0.7) {
-          const baseId = Date.now();
-          const newCoins = [];
-          for (let i = 0; i < 5; i++) {
-            newCoins.push({ id: baseId + i, type: 'coin', lane, y: 600 + i * 40, value: 1 });
-          }
-          setCollectibles(prev => [...prev, ...newCoins]);
-        } else {
-          setCollectibles(prev => [...prev, { id: Date.now(), type: 'coin', lane, y: 600, value: 1 }]);
-        }
-      }
-
-      powerUpSpawnRef.current++;
-      if (powerUpSpawnRef.current > 300) {
-        powerUpSpawnRef.current = 0;
-        const types = ['jetpack', 'magnet', 'multiplier'];
-        const type = types[Math.floor(Math.random() * types.length)];
-        const lane = LANES[Math.floor(Math.random() * LANES.length)];
-        setPowerUps(prev => [...prev, { id: Date.now(), type, lane, y: 600 }]);
-      }
-
-      setObstacles(prev => prev.map(obs => ({ ...obs, y: obs.y - speedRef.current })).filter(obs => obs.y > -100));
-      setCollectibles(prev => prev.map(col => ({ ...col, y: col.y - speedRef.current })).filter(col => col.y > -50));
-      setPowerUps(prev => prev.map(pu => ({ ...pu, y: pu.y - speedRef.current })).filter(pu => pu.y > -50));
-
-      setPowerUpTimer(prev => {
-        if (prev <= 0) {
-          setActivePowerUp(null);
-          return 0;
-        }
-        return prev - 16;
-      });
-    }, 16);
-
-    return () => clearInterval(gameLoop);
-  }, [gameState]);
-
-  useEffect(() => {
-    if (gameState !== 'playing') return;
-
-    const collisionCheck = setInterval(() => {
-      const playerHeight = 60;
-      const playerBottom = 400 - playerY;
-      const playerTop = playerBottom - playerHeight;
-
-      obstacles.forEach(obs => {
-        if (obs.lane === playerLane && obs.y < 450 && obs.y > 350) {
-          if (obs.type === 'train' && playerTop < 400 - obs.height) {
-            if (activePowerUp !== 'jetpack' && !isInvincible) {
-              loseLife();
-              setObstacles(prev => prev.filter(o => o.id !== obs.id));
-            }
-          } else if (obs.type === 'barrier' && playerY < 30) {
-            if (activePowerUp !== 'jetpack' && !isInvincible) {
-              loseLife();
-              setObstacles(prev => prev.filter(o => o.id !== obs.id));
-            }
-          }
-        }
-      });
-
-      collectibles.forEach(col => {
-        if (col.lane === playerLane && col.y < 450 && col.y > 350) {
-          setCoins(prev => prev + col.value);
-          const multiplier = activePowerUp === 'multiplier' ? 2 : 1;
-          setScore(prev => prev + 10 * multiplier);
-          setCollectibles(prev => prev.filter(c => c.id !== col.id));
-        }
-      });
-
-      powerUps.forEach(pu => {
-        if (pu.lane === playerLane && pu.y < 450 && pu.y > 350) {
-          setActivePowerUp(pu.type);
-          setPowerUpTimer(5000);
-          setPowerUps(prev => prev.filter(p => p.id !== pu.id));
-        }
-      });
-
-      if (activePowerUp === 'magnet') {
-        collectibles.forEach(col => {
-          if (Math.abs(col.lane - playerLane) <= 1 && col.y < 500 && col.y > 300) {
-            setCoins(prev => prev + col.value);
-            setScore(prev => prev + 10);
-            setCollectibles(prev => prev.filter(c => c.id !== col.id));
-          }
-        });
-      }
-    }, 16);
-
-    return () => clearInterval(collisionCheck);
-  }, [gameState, playerY, playerLane, obstacles, collectibles, powerUps, activePowerUp, isInvincible, loseLife]);
-
-  const getLaneX = (lane) => lane * 80 + window.innerWidth / 2 - 40;
-
-  const PixelPlayer = ({ isInvincible, activePowerUp }) => {
-    const opacity = isInvincible ? 0.5 : 1;
-    const glowColor = activePowerUp === 'jetpack' ? '#facc15' : activePowerUp === 'magnet' ? '#a855f7' : activePowerUp === 'multiplier' ? '#22c55e' : 'none';
+  const calculateWinner = (squares) => {
+    const lines = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6]
+    ];
     
-    return (
-      <svg width="40" height="55" viewBox="0 0 16 21" style={{ opacity, filter: glowColor !== 'none' ? `drop-shadow(0 0 4px ${glowColor})` : 'none' }}>
-        <rect x="5" y="0" width="6" height="5" fill="#FFB6A3"/>
-        <rect x="4" y="0" width="8" height="2" fill="#4A3829"/>
-        <rect x="6" y="2" width="1" height="1" fill="#000"/>
-        <rect x="9" y="2" width="1" height="1" fill="#000"/>
-        <rect x="7" y="4" width="2" height="1" fill="#000"/>
-        <rect x="4" y="5" width="8" height="7" fill="#3B82F6"/>
-        <rect x="2" y="6" width="2" height="5" fill="#FFB6A3"/>
-        <rect x="12" y="6" width="2" height="5" fill="#FFB6A3"/>
-        <rect x="5" y="12" width="2" height="5" fill="#1E3A8A"/>
-        <rect x="9" y="12" width="2" height="5" fill="#1E3A8A"/>
-        <rect x="4" y="17" width="3" height="2" fill="#000"/>
-        <rect x="9" y="17" width="3" height="2" fill="#000"/>
-      </svg>
-    );
+    for (let [a, b, c] of lines) {
+      if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+        return { winner: squares[a], line: [a, b, c] };
+      }
+    }
+    return null;
   };
+
+  const isBoardFull = (squares) => {
+    return squares.every(square => square !== null);
+  };
+
+  const minimax = (squares, depth, isMaximizing) => {
+    const result = calculateWinner(squares);
+    
+    if (result) {
+      return result.winner === 'O' ? 10 - depth : depth - 10;
+    }
+    
+    if (isBoardFull(squares)) {
+      return 0;
+    }
+
+    if (isMaximizing) {
+      let bestScore = -Infinity;
+      for (let i = 0; i < 9; i++) {
+        if (squares[i] === null) {
+          squares[i] = 'O';
+          const score = minimax(squares, depth + 1, false);
+          squares[i] = null;
+          bestScore = Math.max(score, bestScore);
+        }
+      }
+      return bestScore;
+    } else {
+      let bestScore = Infinity;
+      for (let i = 0; i < 9; i++) {
+        if (squares[i] === null) {
+          squares[i] = 'X';
+          const score = minimax(squares, depth + 1, true);
+          squares[i] = null;
+          bestScore = Math.min(score, bestScore);
+        }
+      }
+      return bestScore;
+    }
+  };
+
+  const getBestMove = (squares) => {
+    let bestScore = -Infinity;
+    let bestMove = null;
+
+    for (let i = 0; i < 9; i++) {
+      if (squares[i] === null) {
+        squares[i] = 'O';
+        const score = minimax(squares, 0, false);
+        squares[i] = null;
+        
+        if (score > bestScore) {
+          bestScore = score;
+          bestMove = i;
+        }
+      }
+    }
+    return bestMove;
+  };
+
+  useEffect(() => {
+    if (gameMode === 'ai' && !isXNext && !winner && !isBoardFull(board)) {
+      setIsThinking(true);
+      const timer = setTimeout(() => {
+        const bestMove = getBestMove([...board]);
+        if (bestMove !== null) {
+          handleClick(bestMove);
+        }
+        setIsThinking(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isXNext, gameMode, winner, board]);
+
+  const handleClick = (index) => {
+    if (board[index] || winner || (gameMode === 'ai' && !isXNext)) return;
+
+    const newBoard = [...board];
+    newBoard[index] = isXNext ? 'X' : 'O';
+    setBoard(newBoard);
+
+    const result = calculateWinner(newBoard);
+    if (result) {
+      setWinner(result.winner);
+      setWinningLine(result.line);
+      const newScores = { ...scores, [result.winner]: scores[result.winner] + 1 };
+      setScores(newScores);
+      saveScores(newScores);
+    } else if (isBoardFull(newBoard)) {
+      setWinner('draw');
+      const newScores = { ...scores, draws: scores.draws + 1 };
+      setScores(newScores);
+      saveScores(newScores);
+    }
+
+    setIsXNext(!isXNext);
+  };
+
+  const resetGame = () => {
+    setBoard(Array(9).fill(null));
+    setIsXNext(true);
+    setWinner(null);
+    setWinningLine([]);
+    setIsThinking(false);
+  };
+
+  const resetScores = () => {
+    const newScores = { X: 0, O: 0, draws: 0 };
+    setScores(newScores);
+    saveScores(newScores);
+  };
+
+  const selectMode = (mode) => {
+    setGameMode(mode);
+    resetGame();
+  };
+
+  if (!gameMode) {
+    return (
+      <div className="w-full h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex flex-col items-center justify-center p-4">
+        <div className="text-center mb-8">
+          <h1 className="text-6xl font-black mb-4 text-white" style={{ textShadow: '4px 4px 0px rgba(0,0,0,0.3)' }}>⭕ TIC TAC TOE ❌</h1>
+          <p className="text-xl text-blue-200">Choose your game mode</p>
+        </div>
+        
+        <div className="flex flex-col gap-4 w-full max-w-md">
+          <button
+            onClick={() => selectMode('pvp')}
+            className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-black text-2xl py-6 px-8 rounded-2xl transform hover:scale-105 transition-all shadow-2xl"
+          >
+            👥 Player vs Player
+          </button>
+          
+          <button
+            onClick={() => selectMode('ai')}
+            className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-black text-2xl py-6 px-8 rounded-2xl transform hover:scale-105 transition-all shadow-2xl"
+          >
+            🤖 Player vs AI
+          </button>
+        </div>
+        
+        <div className="mt-8 text-center">
+          <p className="text-blue-300 text-sm">Built for Farcaster</p>
+        </div>
+      </div>
+    );
+  }
+
+  const status = winner === 'draw' 
+    ? "It's a Draw!" 
+    : winner 
+    ? `Winner: ${winner}` 
+    : isThinking 
+    ? '🤖 AI is thinking...'
+    : `Next: ${isXNext ? 'X' : 'O'}`;
 
   return (
-    <div className="w-full h-screen bg-gradient-to-b from-blue-900 to-blue-700 flex flex-col items-center justify-center overflow-hidden select-none" style={{ imageRendering: 'pixelated' }}>
-      {gameState === 'playing' && (
-        <>
-          <div className="absolute top-2 left-2 right-2 z-20 flex justify-between items-start flex-wrap gap-2 text-xs">
-            <div className="bg-black border-2 border-white text-yellow-400 px-2 py-1" style={{ fontFamily: 'monospace' }}>
-              <p className="text-xs">SCORE: {score}</p>
-            </div>
-            <div className="bg-black border-2 border-white text-white px-2 py-1" style={{ fontFamily: 'monospace' }}>
-              <div className="flex gap-1">
-                LIVES: {[...Array(3)].map((_, i) => (
-                  <span key={i}>{i < lives ? '❤️' : '🖤'}</span>
-                ))}
-              </div>
-            </div>
-            <div className="bg-black border-2 border-white text-yellow-400 px-2 py-1" style={{ fontFamily: 'monospace' }}>
-              <p className="text-xs">COINS: {coins}</p>
-            </div>
-          </div>
+    <div className="w-full h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex flex-col items-center justify-center p-4">
+      <div className="mb-6">
+        <button
+          onClick={() => setGameMode(null)}
+          className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg text-sm"
+        >
+          ← Back to Menu
+        </button>
+      </div>
 
-          {activePowerUp && (
-            <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-20 bg-purple-600 border-2 border-white text-white px-3 py-1 font-bold text-xs" style={{ fontFamily: 'monospace' }}>
-              {activePowerUp.toUpperCase()} {Math.ceil(powerUpTimer / 1000)}s
-            </div>
-          )}
+      <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-3xl p-6 shadow-2xl border-4 border-white border-opacity-20">
+        <div className="text-center mb-4">
+          <h2 className="text-3xl font-black text-white mb-2" style={{ textShadow: '2px 2px 0px rgba(0,0,0,0.3)' }}>
+            {status}
+          </h2>
+          <p className="text-blue-200 text-lg font-bold">
+            {gameMode === 'ai' ? '🤖 AI Mode' : '👥 PvP Mode'}
+          </p>
+        </div>
 
-          {isInvincible && (
-            <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-20 bg-blue-600 border-2 border-white text-white px-3 py-1 font-bold animate-pulse text-xs" style={{ fontFamily: 'monospace' }}>
-              INVINCIBLE!
-            </div>
-          )}
-
-          <div className="relative w-full h-full cursor-pointer" onClick={handleGameClick}>
-            <div className="absolute bottom-0 w-full h-full">
-              {LANES.map(lane => (
-                <div key={lane} className="absolute h-full bg-gray-700 border-l-2 border-r-2 border-white border-opacity-30" style={{ left: `${getLaneX(lane) - 30}px`, width: '60px' }}>
-                  {[10, 30, 50, 70].map((top, i) => (
-                    <div key={i} className="absolute w-full border-b-2 border-dashed border-white border-opacity-40" style={{ top: `${top}%` }}></div>
-                  ))}
-                </div>
-              ))}
-            </div>
-
-            {obstacles.map(obs => (
-              <div key={obs.id} className="absolute border-2 border-white" style={{ left: `${getLaneX(obs.lane) - 20}px`, bottom: `${obs.y}px`, width: '40px', height: `${obs.height}px`, backgroundColor: obs.type === 'train' ? '#dc2626' : '#eab308', boxShadow: '2px 2px 0px rgba(0,0,0,0.5)' }}>
-                <div className="text-white text-center font-bold text-xl">{obs.type === 'train' ? '█' : '▲'}</div>
-              </div>
-            ))}
-
-            {collectibles.map(col => (
-              <div key={col.id} className="absolute border-2 border-yellow-600 bg-yellow-400 rounded-full" style={{ left: `${getLaneX(col.lane) - 10}px`, bottom: `${col.y}px`, width: '20px', height: '20px', boxShadow: '1px 1px 0px rgba(0,0,0,0.5)' }}></div>
-            ))}
-
-            {powerUps.map(pu => (
-              <div key={pu.id} className="absolute border-2 border-white flex items-center justify-center text-white font-bold" style={{ left: `${getLaneX(pu.lane) - 12}px`, bottom: `${pu.y}px`, width: '24px', height: '24px', backgroundColor: pu.type === 'jetpack' ? '#facc15' : pu.type === 'magnet' ? '#a855f7' : '#22c55e', boxShadow: '2px 2px 0px rgba(0,0,0,0.5)', fontSize: '14px' }}>
-                {pu.type === 'jetpack' && '↑'}
-                {pu.type === 'magnet' && 'M'}
-                {pu.type === 'multiplier' && '×2'}
-              </div>
-            ))}
-
-            <div className="absolute" style={{ left: `${getLaneX(playerLane) - 20}px`, bottom: `${400 + playerY}px` }}>
-              <PixelPlayer isInvincible={isInvincible} activePowerUp={activePowerUp} />
-            </div>
-          </div>
-
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 flex gap-4">
-            <button onClick={(e) => { e.stopPropagation(); moveLane(-1); }} className="bg-white border-2 border-black p-3 active:scale-95" style={{ boxShadow: '2px 2px 0px #000' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="black">
-                <path d="M15 18l-6-6 6-6v12z"/>
-              </svg>
+        <div className="grid grid-cols-3 gap-3 mb-6" style={{ width: '320px', height: '320px' }}>
+          {board.map((value, index) => (
+            <button
+              key={index}
+              onClick={() => handleClick(index)}
+              disabled={!!winner || (gameMode === 'ai' && !isXNext)}
+              className={`
+                bg-white bg-opacity-90 hover:bg-opacity-100 rounded-2xl 
+                font-black text-6xl transition-all transform hover:scale-105
+                shadow-lg border-4
+                ${winningLine.includes(index) ? 'border-yellow-400 bg-yellow-100' : 'border-white border-opacity-30'}
+                ${value === 'X' ? 'text-pink-500' : 'text-cyan-500'}
+                ${!value && !winner ? 'cursor-pointer' : 'cursor-default'}
+                disabled:opacity-50 disabled:cursor-not-allowed
+              `}
+              style={{ 
+                width: '100px', 
+                height: '100px',
+                textShadow: value ? '3px 3px 0px rgba(0,0,0,0.1)' : 'none'
+              }}
+            >
+              {value}
             </button>
-            <button onClick={(e) => { e.stopPropagation(); moveLane(1); }} className="bg-white border-2 border-black p-3 active:scale-95" style={{ boxShadow: '2px 2px 0px #000' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="black">
-                <path d="M9 6l6 6-6 6V6z"/>
-              </svg>
-            </button>
-          </div>
-        </>
-      )}
+          ))}
+        </div>
 
-      {gameState === 'gameOver' && (
-        <div className="text-center z-10 p-4">
-          <h2 className="text-4xl font-bold text-red-600 mb-4" style={{ fontFamily: 'monospace', textShadow: '3px 3px 0px #000' }}>GAME OVER!</h2>
-          <div className="bg-black border-4 border-white p-6 mb-4">
-            <p className="text-2xl font-bold text-yellow-400 mb-2" style={{ fontFamily: 'monospace' }}>SCORE: {score}</p>
-            <p className="text-xl font-bold text-white mb-2" style={{ fontFamily: 'monospace' }}>COINS: {coins}</p>
-            <p className="text-lg text-gray-400" style={{ fontFamily: 'monospace' }}>HIGH: {highScore}</p>
+        <div className="flex gap-3">
+          <button
+            onClick={resetGame}
+            className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-xl transition-all transform hover:scale-105 shadow-lg"
+          >
+            🔄 New Game
+          </button>
+          <button
+            onClick={resetScores}
+            className="flex-1 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white font-bold py-3 px-6 rounded-xl transition-all transform hover:scale-105 shadow-lg"
+          >
+            🗑️ Reset Scores
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-6 bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl p-4 shadow-xl border-2 border-white border-opacity-20">
+        <h3 className="text-white font-bold text-lg mb-2 text-center">📊 Scoreboard</h3>
+        <div className="flex gap-6 text-center">
+          <div>
+            <p className="text-pink-300 font-bold text-sm">Player X</p>
+            <p className="text-white font-black text-3xl">{scores.X}</p>
+          </div>
+          <div>
+            <p className="text-gray-300 font-bold text-sm">Draws</p>
+            <p className="text-white font-black text-3xl">{scores.draws}</p>
+          </div>
+          <div>
+            <p className="text-cyan-300 font-bold text-sm">{gameMode === 'ai' ? 'AI' : 'Player O'}</p>
+            <p className="text-white font-black text-3xl">{scores.O}</p>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
 window.initGame = () => {
-  ReactDOM.render(<SubwaySurfers />, document.getElementById('root'));
+  ReactDOM.render(<TicTacToe />, document.getElementById('root'));
 };
-
-if (document.getElementById('intro-overlay').classList.contains('hidden')) {
-  window.initGame();
-}
-
-document.getElementById('play-again').addEventListener('click', async (e) => {
-  e.preventDefault();
-  const btn = e.target;
-  const payThen = window.payThen || async (action) => action();
-  await payThen(async () => {
-    btn.classList.add('hidden');
-    window.initGame();
-  }, btn);
-});
 </script>
 </body>
 </html>
