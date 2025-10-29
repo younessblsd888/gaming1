@@ -292,8 +292,8 @@
             <div class="stat-value" id="losses">0</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">Draws</div>
-            <div class="stat-value" id="draws">0</div>
+            <div class="stat-label">Lives</div>
+            <div class="stat-value" id="attempts" style="color: #ef4444;">1</div>
           </div>
         </div>
         
@@ -322,7 +322,6 @@
         
         <div class="controls">
           <button id="reset-btn" class="btn-secondary">🔄 New Game</button>
-          <button id="share-btn" class="btn-secondary">📤 Share Score</button>
         </div>
       </div>
     </div>
@@ -351,10 +350,9 @@ const gameContainer = document.getElementById('game-container');
 const board = document.getElementById('board');
 const gameStatus = document.getElementById('game-status');
 const resetBtn = document.getElementById('reset-btn');
-const shareBtn = document.getElementById('share-btn');
 const winsEl = document.getElementById('wins');
 const lossesEl = document.getElementById('losses');
-const drawsEl = document.getElementById('draws');
+const attemptsEl = document.getElementById('attempts');
 const difficultyBadge = document.getElementById('difficulty-badge');
 const levelUpNotice = document.getElementById('level-up-notice');
 
@@ -437,7 +435,7 @@ let gameState = {
   currentPlayer: 'X',
   gameActive: true,
   difficulty: 'easy', // easy, medium, hard
-  stats: { wins: 0, losses: 0, draws: 0 }
+  stats: { wins: 0, losses: 0, attempts: 1 }
 };
 
 const winPatterns = [
@@ -481,7 +479,14 @@ async function saveStats() {
 function updateStatsDisplay() {
   winsEl.textContent = gameState.stats.wins;
   lossesEl.textContent = gameState.stats.losses;
-  drawsEl.textContent = gameState.stats.draws;
+  attemptsEl.textContent = gameState.stats.attempts;
+  
+  // Color code based on life remaining
+  if (gameState.stats.attempts === 1) {
+    attemptsEl.style.color = '#ef4444';
+  } else {
+    attemptsEl.style.color = '#9ca3af';
+  }
 }
 
 function updateDifficultyDisplay() {
@@ -668,9 +673,36 @@ function endGame(result) {
   } else if (result.winner === 'O') {
     gameStatus.textContent = "😔 AI Wins!";
     gameState.stats.losses++;
+    gameState.stats.attempts--;
+    
+    // Immediate game over after 1 loss
+    setTimeout(() => {
+      gameStatus.textContent = "💀 Game Over! You lost your life!";
+      showLevelUpNotice('Game Over! Pay to play again from Easy mode...');
+      disable(resetBtn, true);
+      
+      setTimeout(() => {
+        // Reset everything
+        gameState.difficulty = 'easy';
+        gameState.stats.wins = 0;
+        gameState.stats.losses = 0;
+        gameState.stats.attempts = 1;
+        updateDifficultyDisplay();
+        updateStatsDisplay();
+        saveStats();
+        
+        // Show play again button
+        playAgainBtn.classList.remove('hidden');
+      }, 2000);
+    }, 1000);
+    
+    highlightWinningCells(result.pattern);
+    updateStatsDisplay();
+    saveStats();
+    return;
   } else {
     gameStatus.textContent = "🤝 It's a Draw!";
-    gameState.stats.draws++;
+    // Draw doesn't cost a life
   }
   
   highlightWinningCells(result.pattern);
@@ -698,24 +730,9 @@ function resetGame() {
   });
 }
 
-function shareScore() {
-  const totalGames = gameState.stats.wins + gameState.stats.losses + gameState.stats.draws;
-  const winRate = totalGames > 0 ? Math.round((gameState.stats.wins / totalGames) * 100) : 0;
-  
-  const text = `🎮 Tic-Tac-Toe AI Challenge!\n\n` +
-    `📊 Stats: ${gameState.stats.wins}W-${gameState.stats.losses}L-${gameState.stats.draws}D\n` +
-    `🎯 Win Rate: ${winRate}%\n` +
-    `⚡ Difficulty: ${gameState.difficulty.toUpperCase()}\n\n` +
-    `Can you beat the AI? 🤖`;
-  
-  const castUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=https://your-app-url.vercel.app`;
-  window.open(castUrl, '_blank');
-}
-
 // Event Listeners
 board.addEventListener('click', handleCellClick);
 resetBtn.addEventListener('click', resetGame);
-shareBtn.addEventListener('click', shareScore);
 
 /* ===== Start Game (Pay-Gated) ===== */
 playBtn.addEventListener('click', (e) => {
@@ -733,8 +750,18 @@ playAgainBtn.addEventListener('click', (e) => {
   e.preventDefault();
   payThen(async () => {
     playAgainBtn.classList.add('hidden');
-    await loadStats();
+    
+    // Full reset when paying again
+    gameState.difficulty = 'easy';
+    gameState.stats.wins = 0;
+    gameState.stats.losses = 0;
+    gameState.stats.attempts = 1;
+    
+    updateDifficultyDisplay();
+    updateStatsDisplay();
+    await saveStats();
     resetGame();
+    disable(resetBtn, false);
   }, playAgainBtn);
 });
 
@@ -744,4 +771,3 @@ window.addEventListener('unhandledrejection', e => console.error('Unhandled prom
 </script>
 </body>
 </html>
-
