@@ -144,6 +144,9 @@ async function payThen(action, triggerBtn) {
   }
 }
 
+// Expose payThen globally for play-again button
+window.payThen = payThen;
+
 playBtn.addEventListener('click', (e) => {
   e.preventDefault();
   payThen(() => {
@@ -177,7 +180,6 @@ const SubwaySurfers = () => {
   const [lives, setLives] = useState(3);
   const [playerLane, setPlayerLane] = useState(0);
   const [playerY, setPlayerY] = useState(0);
-  const [playerVelocityY, setPlayerVelocityY] = useState(0);
   const [isJumping, setIsJumping] = useState(false);
   const [obstacles, setObstacles] = useState([]);
   const [collectibles, setCollectibles] = useState([]);
@@ -191,6 +193,7 @@ const SubwaySurfers = () => {
   const obstacleSpawnRef = useRef(0);
   const coinSpawnRef = useRef(0);
   const powerUpSpawnRef = useRef(0);
+  const playerVelocityYRef = useRef(0);
 
   useEffect(() => {
     const loadHighScore = async () => {
@@ -216,40 +219,49 @@ const SubwaySurfers = () => {
     }
   };
 
-  const endGame = () => {
+  const endGame = useCallback(() => {
     setGameState('gameOver');
-    if (score > highScore) {
-      setHighScore(score);
-      saveHighScore(score);
-    }
     const playAgainBtn = document.getElementById('play-again');
-    playAgainBtn.classList.remove('hidden');
-  };
+    if (playAgainBtn) playAgainBtn.classList.remove('hidden');
+  }, []);
 
-  const loseLife = () => {
-    if (isInvincible) return;
-    setLives(prev => {
-      const newLives = prev - 1;
-      if (newLives <= 0) {
-        endGame();
-        return 0;
-      }
-      return newLives;
+  const loseLife = useCallback(() => {
+    setIsInvincible(prev => {
+      if (prev) return prev;
+      
+      setLives(currentLives => {
+        const newLives = currentLives - 1;
+        if (newLives <= 0) {
+          setTimeout(() => endGame(), 100);
+          return 0;
+        }
+        return newLives;
+      });
+      
+      setTimeout(() => setIsInvincible(false), 2000);
+      return true;
     });
-    setIsInvincible(true);
-    setTimeout(() => setIsInvincible(false), 2000);
-  };
+  }, [endGame]);
 
   const moveLane = useCallback((direction) => {
-    if (gameState !== 'playing') return;
-    setPlayerLane(prev => Math.max(-1, Math.min(1, prev + direction)));
-  }, [gameState]);
+    setGameState(state => {
+      if (state !== 'playing') return state;
+      setPlayerLane(prev => Math.max(-1, Math.min(1, prev + direction)));
+      return state;
+    });
+  }, []);
 
   const jump = useCallback(() => {
-    if (gameState !== 'playing' || isJumping) return;
-    setIsJumping(true);
-    setPlayerVelocityY(JUMP_POWER);
-  }, [gameState, isJumping]);
+    setGameState(state => {
+      if (state !== 'playing') return state;
+      setIsJumping(jumping => {
+        if (jumping) return jumping;
+        playerVelocityYRef.current = JUMP_POWER;
+        return true;
+      });
+      return state;
+    });
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -268,23 +280,38 @@ const SubwaySurfers = () => {
     if (gameState === 'playing') jump();
   };
 
+  // Update high score when game ends
+  useEffect(() => {
+    if (gameState === 'gameOver' && score > highScore) {
+      setHighScore(score);
+      saveHighScore(score);
+    }
+  }, [gameState, score, highScore]);
+
   useEffect(() => {
     if (gameState !== 'playing') return;
 
     gameLoopRef.current = setInterval(() => {
-      setDistance(prev => prev + 1);
+      setDistance(prev => {
+        const newDist = prev + 1;
+        speedRef.current = GAME_SPEED + Math.floor(newDist / 500) * 0.5;
+        return newDist;
+      });
+      
       setScore(prev => prev + 1);
-      speedRef.current = GAME_SPEED + Math.floor(distance / 500) * 0.5;
 
-      if (isJumping) {
-        setPlayerY(prev => prev + playerVelocityY);
-        setPlayerVelocityY(prev => prev - GRAVITY);
-        if (playerY <= 0) {
-          setPlayerY(0);
-          setPlayerVelocityY(0);
+      setPlayerY(prev => {
+        const velocity = playerVelocityYRef.current;
+        const newY = prev + velocity;
+        playerVelocityYRef.current = velocity - GRAVITY;
+        
+        if (newY <= 0) {
+          playerVelocityYRef.current = 0;
           setIsJumping(false);
+          return 0;
         }
-      }
+        return newY;
+      });
 
       obstacleSpawnRef.current++;
       if (obstacleSpawnRef.current > 100 - speedRef.current * 5) {
@@ -300,9 +327,12 @@ const SubwaySurfers = () => {
         const lane = LANES[Math.floor(Math.random() * LANES.length)];
         const pattern = Math.random();
         if (pattern > 0.7) {
+          const baseId = Date.now();
+          const newCoins = [];
           for (let i = 0; i < 5; i++) {
-            setCollectibles(prev => [...prev, { id: Date.now() + i, type: 'coin', lane, y: 600 + i * 40, value: 1 }]);
+            newCoins.push({ id: baseId + i, type: 'coin', lane, y: 600 + i * 40, value: 1 });
           }
+          setCollectibles(prev => [...prev, ...newCoins]);
         } else {
           setCollectibles(prev => [...prev, { id: Date.now(), type: 'coin', lane, y: 600, value: 1 }]);
         }
@@ -317,32 +347,49 @@ const SubwaySurfers = () => {
         setPowerUps(prev => [...prev, { id: Date.now(), type, lane, y: 600 }]);
       }
 
-      setObstacles(prev => prev.map(obs => ({ ...obs, y: obs.y - speedRef.current })).filter(obs => obs.y > -100));
-      setCollectibles(prev => prev.map(col => ({ ...col, y: col.y - speedRef.current })).filter(col => col.y > -50));
-      setPowerUps(prev => prev.map(pu => ({ ...pu, y: pu.y - speedRef.current })).filter(pu => pu.y > -50));
+      setObstacles(prev => {
+        return prev.map(obs => ({ ...obs, y: obs.y - speedRef.current })).filter(obs => obs.y > -100);
+      });
+      
+      setCollectibles(prev => {
+        return prev.map(col => ({ ...col, y: col.y - speedRef.current })).filter(col => col.y > -50);
+      });
+      
+      setPowerUps(prev => {
+        return prev.map(pu => ({ ...pu, y: pu.y - speedRef.current })).filter(pu => pu.y > -50);
+      });
 
-      if (activePowerUp) {
-        setPowerUpTimer(prev => {
-          if (prev <= 0) {
-            setActivePowerUp(null);
-            return 0;
-          }
-          return prev - 16;
-        });
-      }
+      setPowerUpTimer(prev => {
+        if (prev <= 0) {
+          setActivePowerUp(null);
+          return 0;
+        }
+        return prev - 16;
+      });
+    }, 16);
+
+    return () => {
+      if (gameLoopRef.current) clearInterval(gameLoopRef.current);
+    };
+  }, [gameState]);
+
+  // Collision detection - separate effect with proper dependencies
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+
+    const checkCollisions = () => {
+      const playerHeight = 60;
+      const playerBottom = 400 - playerY;
+      const playerTop = playerBottom - playerHeight;
 
       obstacles.forEach(obs => {
-        const playerHeight = 60;
-        const playerBottom = 400 - playerY;
-        const playerTop = playerBottom - playerHeight;
-        
         if (obs.lane === playerLane && obs.y < 450 && obs.y > 350) {
           if (obs.type === 'train' && playerTop < 400 - obs.height) {
             if (activePowerUp !== 'jetpack' && !isInvincible) {
               loseLife();
               setObstacles(prev => prev.filter(o => o.id !== obs.id));
             }
-          } else if (obs.type === 'barrier' && !isJumping) {
+          } else if (obs.type === 'barrier' && playerY < 30) {
             if (activePowerUp !== 'jetpack' && !isInvincible) {
               loseLife();
               setObstacles(prev => prev.filter(o => o.id !== obs.id));
@@ -377,10 +424,11 @@ const SubwaySurfers = () => {
           }
         });
       }
-    }, 16);
+    };
 
-    return () => clearInterval(gameLoopRef.current);
-  }, [gameState, isJumping, playerY, playerVelocityY, playerLane, obstacles, collectibles, powerUps, activePowerUp, distance, isInvincible]);
+    const collisionInterval = setInterval(checkCollisions, 16);
+    return () => clearInterval(collisionInterval);
+  }, [gameState, playerY, playerLane, obstacles, collectibles, powerUps, activePowerUp, isInvincible, loseLife]);
 
   const getLaneX = (lane) => lane * 80 + window.innerWidth / 2 - 40;
 
@@ -502,25 +550,4 @@ const SubwaySurfers = () => {
 };
 
 window.initGame = () => {
-  ReactDOM.render(<SubwaySurfers />, document.getElementById('root'));
-};
-
-// Auto-start if overlay hidden (for testing)
-if (document.getElementById('intro-overlay').classList.contains('hidden')) {
-  window.initGame();
-}
-
-// Play Again Handler
-document.getElementById('play-again').addEventListener('click', async (e) => {
-  e.preventDefault();
-  const btn = e.target;
-  const payThen = window.payThen || async (action) => action();
-  await payThen(async () => {
-    btn.classList.add('hidden');
-    window.initGame();
-  }, btn);
-});
-</script>
-</body>
-</html>
-
+  ReactDOM.render(<SubwaySur
