@@ -7,12 +7,12 @@
   "miniapp": {
     "version": "1",
     "name": "XO Game",
-    "iconUrl": "https://png.pngtree.com/png-vector/20220420/ourmid/pngtree-tic-tac-toe-pattern-png-png-image_4549871.png",
+    "iconUrl": "https://m.media-amazon.com/images/I/81Ql2snyU4L.png",
     "homeUrl": "https://gaming1-rho.vercel.app/",
-    "imageUrl": "https://png.pngtree.com/png-vector/20220420/ourmid/pngtree-tic-tac-toe-pattern-png-png-image_4549871.png",
+    "imageUrl": "https://m.media-amazon.com/images/I/81Ql2snyU4L.png",
     "buttonTitle": "Play Now",
     "splashImageUrl": "https://m.media-amazon.com/images/I/81Ql2snyU4L.png",
     "splashBackgroundColor": "#000000",
-    "description": "Welcome To subway game in Farcaster!"
+    "description": "XO in Farcaster"
   }
 }
