@@ -41,12 +41,12 @@
 </style>
 </head>
 <body>
-  <div id="intro-overlay" class="overlay hidden">
+  <div id="intro-overlay" class="overlay">
     <div class="card" role="dialog" aria-modal="true">
       <h1>🏃 Play Subway Surfers</h1>
       <p class="muted">A small Base transfer is required to start playing (mobile & desktop supported).</p>
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
-        <div class="muted" style="font-size: 12px;">Change recipient/amount in code if needed.</div>
+        <button id="skip-payment" style="padding: 8px 16px; background: #1f2a32; color: #9aa7b1; border: 1px solid #1f2a32; border-radius: 8px; font-size: 12px; cursor: pointer;">Skip (Test Mode)</button>
         <button id="play" class="btn-primary">💰 Pay & Play</button>
       </div>
       <div id="status" class="hidden"></div>
@@ -151,6 +151,12 @@ playBtn.addEventListener('click', (e) => {
     document.getElementById('intro-overlay').classList.add('hidden');
     window.initGame();
   }, playBtn);
+});
+
+document.getElementById('skip-payment').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('intro-overlay').classList.add('hidden');
+  window.initGame();
 });
 
 window.addEventListener('error', e => console.error('Error:', e.error || e));
