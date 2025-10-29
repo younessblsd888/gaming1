@@ -6,12 +6,12 @@
   },
   "miniapp": {
     "version": "1",
-    "name": "Farcaster Game",
-    "iconUrl": "https://png.pngtree.com/png-vector/20220420/ourmid/pngtree-tic-tac-toe-pattern-png-png-image_4549871.png",
+    "name": "XO Game",
+    "iconUrl": "https://m.media-amazon.com/images/I/81Ql2snyU4L.png",
     "homeUrl": "https://gaming1-rho.vercel.app/",
     "imageUrl": "https://raw.githubusercontent.com/enchanted-assets/public/main/images/tetris-cover.png",
     "buttonTitle": "Play Now",
-    "splashImageUrl": "https://m.media-amazon.com/images/I/81Ql2snyU4L.png",
+    "splashImageUrl": "https://png.pngtree.com/png-vector/20220420/ourmid/pngtree-tic-tac-toe-pattern-png-png-image_4549871.png",
     "splashBackgroundColor": "#000000",
     "description": "Welcome To subway game in Farcaster!"
   }
