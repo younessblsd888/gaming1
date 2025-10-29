@@ -1,18 +1,18 @@
 {
   "accountAssociation": {
-    "header": "eyJmaWQiOiJmZWFkZXIifQ==",
-    "payload": "eyJtaW5pYXBwIjoiU3Vid2F5IFN1cmZlcnMgTWluaSJ9",
-    "signature": "RANDOM_SIGNATURE_EXAMPLE=="
+    "header": "eyJmaWQiOjUyNjAzOSwidHlwZSI6ImF1dGgiLCJrZXkiOiIweEIzN2U2NTg1OTkyNmZCMTU4MTMzZTZjQjU3NmUyRTYyQWE1OTUxM0QifQ",
+    "payload": "eyJkb21haW4iOiJlbHByby1qYWRlLnZlcmNlbC5hcHAifQ",
+    "signature": "QH4bHxmivupnIDz2CdIkeRj4oUkAcn5g1dNXA+CyCZBawyxIiGmIkuxgULtx9jh1U/CIY88iqpbkrAegfiRtDhs="
   },
   "miniapp": {
     "version": "1",
-    "name": "Subway Surfers Mini",
-    "iconUrl": "https://static.wikia.nocookie.net/subwaysurf/images/c/c2/Pixeljake_surf_sandwich.png/revision/latest/scale-to-width-down/250",
-    "homeUrl": "https://gaming1-lemon.vercel.app/",
+    "name": "Farcaster Game",
+    "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQvaSr-DUDRdxnkdcaTXI9SRlO3i0tXpqnYGw&s",
+    "homeUrl": "https://elpro-jade.vercel.app/",
     "imageUrl": "https://raw.githubusercontent.com/enchanted-assets/public/main/images/tetris-cover.png",
     "buttonTitle": "Play Now",
     "splashImageUrl": "https://raw.githubusercontent.com/enchanted-assets/public/main/images/tetris-splash.png",
     "splashBackgroundColor": "#000000",
-    "description": "Navigate through obstacles and score points in this exciting pixel game!"
+    "description": "Play a fun web game directly in Farcaster!"
   }
 }
