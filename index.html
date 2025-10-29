@@ -41,8 +41,7 @@
 </style>
 </head>
 <body>
-  <!-- Intro Overlay -->
-  <div id="intro-overlay" class="overlay">
+  <div id="intro-overlay" class="overlay hidden">
     <div class="card" role="dialog" aria-modal="true">
       <h1>🏃 Play Subway Surfers</h1>
       <p class="muted">A small Base transfer is required to start playing (mobile & desktop supported).</p>
@@ -144,7 +143,6 @@ async function payThen(action, triggerBtn) {
   }
 }
 
-// Expose payThen globally for play-again button
 window.payThen = payThen;
 
 playBtn.addEventListener('click', (e) => {
@@ -188,7 +186,6 @@ const SubwaySurfers = () => {
   const [powerUpTimer, setPowerUpTimer] = useState(0);
   const [isInvincible, setIsInvincible] = useState(false);
   
-  const gameLoopRef = useRef();
   const speedRef = useRef(GAME_SPEED);
   const obstacleSpawnRef = useRef(0);
   const coinSpawnRef = useRef(0);
@@ -280,7 +277,6 @@ const SubwaySurfers = () => {
     if (gameState === 'playing') jump();
   };
 
-  // Update high score when game ends
   useEffect(() => {
     if (gameState === 'gameOver' && score > highScore) {
       setHighScore(score);
@@ -291,7 +287,7 @@ const SubwaySurfers = () => {
   useEffect(() => {
     if (gameState !== 'playing') return;
 
-    gameLoopRef.current = setInterval(() => {
+    const gameLoop = setInterval(() => {
       setDistance(prev => {
         const newDist = prev + 1;
         speedRef.current = GAME_SPEED + Math.floor(newDist / 500) * 0.5;
@@ -347,17 +343,9 @@ const SubwaySurfers = () => {
         setPowerUps(prev => [...prev, { id: Date.now(), type, lane, y: 600 }]);
       }
 
-      setObstacles(prev => {
-        return prev.map(obs => ({ ...obs, y: obs.y - speedRef.current })).filter(obs => obs.y > -100);
-      });
-      
-      setCollectibles(prev => {
-        return prev.map(col => ({ ...col, y: col.y - speedRef.current })).filter(col => col.y > -50);
-      });
-      
-      setPowerUps(prev => {
-        return prev.map(pu => ({ ...pu, y: pu.y - speedRef.current })).filter(pu => pu.y > -50);
-      });
+      setObstacles(prev => prev.map(obs => ({ ...obs, y: obs.y - speedRef.current })).filter(obs => obs.y > -100));
+      setCollectibles(prev => prev.map(col => ({ ...col, y: col.y - speedRef.current })).filter(col => col.y > -50));
+      setPowerUps(prev => prev.map(pu => ({ ...pu, y: pu.y - speedRef.current })).filter(pu => pu.y > -50));
 
       setPowerUpTimer(prev => {
         if (prev <= 0) {
@@ -368,16 +356,13 @@ const SubwaySurfers = () => {
       });
     }, 16);
 
-    return () => {
-      if (gameLoopRef.current) clearInterval(gameLoopRef.current);
-    };
+    return () => clearInterval(gameLoop);
   }, [gameState]);
 
-  // Collision detection - separate effect with proper dependencies
   useEffect(() => {
     if (gameState !== 'playing') return;
 
-    const checkCollisions = () => {
+    const collisionCheck = setInterval(() => {
       const playerHeight = 60;
       const playerBottom = 400 - playerY;
       const playerTop = playerBottom - playerHeight;
@@ -424,10 +409,9 @@ const SubwaySurfers = () => {
           }
         });
       }
-    };
+    }, 16);
 
-    const collisionInterval = setInterval(checkCollisions, 16);
-    return () => clearInterval(collisionInterval);
+    return () => clearInterval(collisionCheck);
   }, [gameState, playerY, playerLane, obstacles, collectibles, powerUps, activePowerUp, isInvincible, loseLife]);
 
   const getLaneX = (lane) => lane * 80 + window.innerWidth / 2 - 40;
@@ -550,4 +534,22 @@ const SubwaySurfers = () => {
 };
 
 window.initGame = () => {
-  ReactDOM.render(<SubwaySur
+  ReactDOM.render(<SubwaySurfers />, document.getElementById('root'));
+};
+
+if (document.getElementById('intro-overlay').classList.contains('hidden')) {
+  window.initGame();
+}
+
+document.getElementById('play-again').addEventListener('click', async (e) => {
+  e.preventDefault();
+  const btn = e.target;
+  const payThen = window.payThen || async (action) => action();
+  await payThen(async () => {
+    btn.classList.add('hidden');
+    window.initGame();
+  }, btn);
+});
+</script>
+</body>
+</html>
