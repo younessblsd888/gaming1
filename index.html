@@ -11,130 +11,63 @@
     background: linear-gradient(135deg, #0a0e13 0%, #1a1f2e 100%);
     color: #e7ecf0;
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 100dvh;
-    padding: 20px;
     overflow: hidden;
   }
-  .wrap { width: min(900px, 96vw); position: relative; }
-  .card { background: #12171b; border: 1px solid #1f2a32; border-radius: 14px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
   .overlay { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(8,11,14,.85); backdrop-filter: blur(4px); padding: 16px; z-index: 100; }
+  .card { background: #12171b; border: 1px solid #1f2a32; border-radius: 14px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.35); max-width: 500px; }
   .hidden { display: none !important; }
-  
-  h1 {
-    font-size: 28px;
-    font-weight: 900;
-    margin-bottom: 12px;
-    text-shadow: 0 2px 10px rgba(56,189,248,0.5);
-  }
-  
-  .muted {
-    color: #9aa7b1;
-    font-size: 14px;
-    line-height: 1.4;
-    margin-bottom: 16px;
-  }
-  
+  h1 { font-size: 28px; font-weight: 900; margin-bottom: 12px; text-shadow: 0 2px 10px rgba(56,189,248,0.5); }
+  .muted { color: #9aa7b1; font-size: 14px; line-height: 1.4; margin-bottom: 16px; }
   .btn-primary {
-    padding: 14px 28px;
-    background: linear-gradient(135deg, #ff8c42, #ff6b1a);
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    font-weight: 900;
-    font-size: 16px;
-    cursor: pointer;
-    box-shadow: 0 6px 20px rgba(255,107,26,0.4);
-    transition: all 0.2s;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    padding: 14px 28px; background: linear-gradient(135deg, #ff8c42, #ff6b1a); color: #fff;
+    border: none; border-radius: 12px; font-weight: 900; font-size: 16px; cursor: pointer;
+    box-shadow: 0 6px 20px rgba(255,107,26,0.4); transition: all 0.2s; text-transform: uppercase;
   }
-  
-  .btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(255,107,26,0.5);
-  }
-  
-  .btn-primary:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-  
-  #status {
-    margin-top: 15px;
-    font-size: 13px;
-    line-height: 1.5;
-    background: #0f151a;
-    border: 1px solid #1f2a32;
-    border-radius: 10px;
-    padding: 12px;
-  }
-  
+  .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,107,26,0.5); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+  #status { margin-top: 15px; font-size: 13px; line-height: 1.5; background: #0f151a; border: 1px solid #1f2a32; border-radius: 10px; padding: 12px; }
   #status b { color: #cde7d8; }
   #status .ok { color: #4ade80; }
   #status .warn { color: #fbbf24; }
   #status .err { color: #f87171; }
   #status a { color: #86c6ff; text-decoration: none; }
-  
   #play-again {
-    position: fixed;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    padding: 16px 32px;
-    background: linear-gradient(135deg, #ff8c42, #ff6b1a);
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    font-weight: 900;
-    font-size: 18px;
-    cursor: pointer;
-    box-shadow: 0 10px 40px rgba(255,107,26,0.5);
-    z-index: 50;
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    padding: 16px 32px; background: linear-gradient(135deg, #ff8c42, #ff6b1a); color: #fff;
+    border: none; border-radius: 12px; font-weight: 900; font-size: 18px; cursor: pointer;
+    box-shadow: 0 10px 40px rgba(255,107,26,0.5); z-index: 50;
   }
-  
-  #game-container {
-    width: 100%;
-    max-width: 400px;
-    margin: 0 auto;
-  }
+  #root { width: 100vw; height: 100vh; }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <!-- Intro Overlay -->
-    <div id="intro-overlay" class="overlay">
-      <div class="card" role="dialog" aria-modal="true">
-        <h1>🏃 Play Subway Surfers</h1>
-        <p class="muted">A small Base transfer is required to start playing (mobile & desktop supported).</p>
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
-          <div class="muted" style="font-size: 12px;">Change recipient/amount in code if needed.</div>
-          <button id="play" class="btn-primary">💰 Pay & Play</button>
-        </div>
-        <div id="status" class="hidden"></div>
+  <!-- Intro Overlay -->
+  <div id="intro-overlay" class="overlay">
+    <div class="card" role="dialog" aria-modal="true">
+      <h1>🏃 Play Subway Surfers</h1>
+      <p class="muted">A small Base transfer is required to start playing (mobile & desktop supported).</p>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <div class="muted" style="font-size: 12px;">Change recipient/amount in code if needed.</div>
+        <button id="play" class="btn-primary">💰 Pay & Play</button>
       </div>
+      <div id="status" class="hidden"></div>
     </div>
-
-    <div id="game-container"></div>
-    <button id="play-again" class="hidden">💰 Pay & Play Again</button>
   </div>
+
+  <div id="root"></div>
+  <button id="play-again" class="hidden">💰 Pay & Play Again</button>
 
 <script type="module">
 import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk';
 sdk.actions.ready();
 
-/* ===== CONFIG ===== */
 const USE_BASE_SEPOLIA = false;
-const RECIPIENT = "0x1896A467359684afDdFe091d83B9441eeAaBcb80";
+const RECIPIENT = "0x02212a875c56baE7AF27A5a389FD4e8A11442692";
 const AMOUNT_ETH = "0.00001";
-
-const BASE_MAINNET = { chainId: "0x2105",  explorer: "https://basescan.org/tx/" };
+const BASE_MAINNET = { chainId: "0x2105", explorer: "https://basescan.org/tx/" };
 const BASE_SEPOLIA = { chainId: "0x14a34", explorer: "https://sepolia.basescan.org/tx/" };
 const TARGET = USE_BASE_SEPOLIA ? BASE_SEPOLIA : BASE_MAINNET;
 
-/* ===== DOM ===== */
 const statusEl = document.getElementById('status');
 const playBtn = document.getElementById('play');
 const playAgainBtn = document.getElementById('play-again');
@@ -144,7 +77,6 @@ const addLine = html => { showStatus(); statusEl.insertAdjacentHTML('beforeend',
 const clearStatus = () => statusEl.innerHTML = '';
 const disable = (el, yes=true) => { if (el) el.disabled = yes; };
 
-/* ===== Wallet Helpers ===== */
 function parseEther(x) {
   const [w, f=""] = String(x).split('.');
   const frac = (f + '0'.repeat(18)).slice(0, 18);
@@ -212,21 +144,18 @@ async function payThen(action, triggerBtn) {
   }
 }
 
-/* ===== Start Game (Pay-Gated) ===== */
 playBtn.addEventListener('click', (e) => {
   e.preventDefault();
   payThen(() => {
     document.getElementById('intro-overlay').classList.add('hidden');
-    initGame();
+    window.initGame();
   }, playBtn);
 });
 
-// Error handling
 window.addEventListener('error', e => console.error('Error:', e.error || e));
 window.addEventListener('unhandledrejection', e => console.error('Unhandled promise:', e.reason));
 </script>
 
-<!-- React Game -->
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -234,7 +163,6 @@ window.addEventListener('unhandledrejection', e => console.error('Unhandled prom
 
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback } = React;
-
 const LANES = [-1, 0, 1];
 const GAME_SPEED = 5;
 const JUMP_POWER = 15;
@@ -247,12 +175,10 @@ const SubwaySurfers = () => {
   const [highScore, setHighScore] = useState(0);
   const [distance, setDistance] = useState(0);
   const [lives, setLives] = useState(3);
-  
   const [playerLane, setPlayerLane] = useState(0);
   const [playerY, setPlayerY] = useState(0);
   const [playerVelocityY, setPlayerVelocityY] = useState(0);
   const [isJumping, setIsJumping] = useState(false);
-  
   const [obstacles, setObstacles] = useState([]);
   const [collectibles, setCollectibles] = useState([]);
   const [powerUps, setPowerUps] = useState([]);
@@ -296,8 +222,6 @@ const SubwaySurfers = () => {
       setHighScore(score);
       saveHighScore(score);
     }
-    
-    // Show play again button
     const playAgainBtn = document.getElementById('play-again');
     playAgainBtn.classList.remove('hidden');
   };
@@ -458,14 +382,14 @@ const SubwaySurfers = () => {
     return () => clearInterval(gameLoopRef.current);
   }, [gameState, isJumping, playerY, playerVelocityY, playerLane, obstacles, collectibles, powerUps, activePowerUp, distance, isInvincible]);
 
-  const getLaneX = (lane) => lane * 100 + 150;
+  const getLaneX = (lane) => lane * 80 + window.innerWidth / 2 - 40;
 
   const PixelPlayer = ({ isInvincible, activePowerUp }) => {
     const opacity = isInvincible ? 0.5 : 1;
     const glowColor = activePowerUp === 'jetpack' ? '#facc15' : activePowerUp === 'magnet' ? '#a855f7' : activePowerUp === 'multiplier' ? '#22c55e' : 'none';
     
     return (
-      <svg width="48" height="64" viewBox="0 0 16 21" style={{ opacity, filter: glowColor !== 'none' ? `drop-shadow(0 0 4px ${glowColor})` : 'none' }}>
+      <svg width="40" height="55" viewBox="0 0 16 21" style={{ opacity, filter: glowColor !== 'none' ? `drop-shadow(0 0 4px ${glowColor})` : 'none' }}>
         <rect x="5" y="0" width="6" height="5" fill="#FFB6A3"/>
         <rect x="4" y="0" width="8" height="2" fill="#4A3829"/>
         <rect x="6" y="2" width="1" height="1" fill="#000"/>
@@ -478,8 +402,6 @@ const SubwaySurfers = () => {
         <rect x="9" y="12" width="2" height="5" fill="#1E3A8A"/>
         <rect x="4" y="17" width="3" height="2" fill="#000"/>
         <rect x="9" y="17" width="3" height="2" fill="#000"/>
-        <rect x="3" y="8" width="1" height="2" fill="#FFB6A3" opacity="0.5"/>
-        <rect x="12" y="9" width="1" height="2" fill="#FFB6A3" opacity="0.5"/>
       </svg>
     );
   };
@@ -488,85 +410,116 @@ const SubwaySurfers = () => {
     <div className="w-full h-screen bg-gradient-to-b from-blue-900 to-blue-700 flex flex-col items-center justify-center overflow-hidden select-none" style={{ imageRendering: 'pixelated' }}>
       {gameState === 'playing' && (
         <>
-          <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-start flex-wrap gap-2">
-            <div className="bg-black border-4 border-white text-yellow-400 px-3 py-1" style={{ fontFamily: 'monospace' }}>
-              <p className="text-xs">SCORE</p>
-              <p className="text-xl font-bold">{score}</p>
+          <div className="absolute top-2 left-2 right-2 z-20 flex justify-between items-start flex-wrap gap-2 text-xs">
+            <div className="bg-black border-2 border-white text-yellow-400 px-2 py-1" style={{ fontFamily: 'monospace' }}>
+              <p className="text-xs">SCORE: {score}</p>
             </div>
-            <div className="bg-black border-4 border-white text-white px-3 py-1" style={{ fontFamily: 'monospace' }}>
-              <p className="text-xs mb-1">LIVES</p>
+            <div className="bg-black border-2 border-white text-white px-2 py-1" style={{ fontFamily: 'monospace' }}>
               <div className="flex gap-1">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className={`w-5 h-5 ${i < lives ? 'bg-red-600' : 'bg-gray-600'} border-2 border-white`}>
-                    {i < lives && <span className="text-white text-center block text-xs">♥</span>}
-                  </div>
+                LIVES: {[...Array(3)].map((_, i) => (
+                  <span key={i}>{i < lives ? '❤️' : '🖤'}</span>
                 ))}
               </div>
             </div>
-            <div className="bg-black border-4 border-white text-yellow-400 px-3 py-1" style={{ fontFamily: 'monospace' }}>
-              <p className="text-xs">COINS</p>
-              <p className="text-xl font-bold">{coins}</p>
+            <div className="bg-black border-2 border-white text-yellow-400 px-2 py-1" style={{ fontFamily: 'monospace' }}>
+              <p className="text-xs">COINS: {coins}</p>
             </div>
           </div>
 
           {activePowerUp && (
-            <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-20 bg-purple-600 border-4 border-white text-white px-4 py-2 font-bold text-sm" style={{ fontFamily: 'monospace' }}>
-              {activePowerUp.toUpperCase()} - {Math.ceil(powerUpTimer / 1000)}s
+            <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-20 bg-purple-600 border-2 border-white text-white px-3 py-1 font-bold text-xs" style={{ fontFamily: 'monospace' }}>
+              {activePowerUp.toUpperCase()} {Math.ceil(powerUpTimer / 1000)}s
             </div>
           )}
 
           {isInvincible && (
-            <div className="absolute top-32 left-1/2 transform -translate-x-1/2 z-20 bg-blue-600 border-4 border-white text-white px-4 py-2 font-bold animate-pulse text-sm" style={{ fontFamily: 'monospace' }}>
+            <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-20 bg-blue-600 border-2 border-white text-white px-3 py-1 font-bold animate-pulse text-xs" style={{ fontFamily: 'monospace' }}>
               INVINCIBLE!
             </div>
           )}
 
-          <div className="relative w-full h-full cursor-pointer" style={{ perspective: '500px' }} onClick={handleGameClick}>
+          <div className="relative w-full h-full cursor-pointer" onClick={handleGameClick}>
             <div className="absolute bottom-0 w-full h-full">
               {LANES.map(lane => (
-                <div key={lane} className="absolute h-full w-24 bg-gray-700 border-l-4 border-r-4 border-white border-opacity-50" style={{ left: `${getLaneX(lane) - 12}px`, imageRendering: 'pixelated' }}>
-                  <div className="absolute w-full h-8 border-b-4 border-dashed border-white" style={{ top: '10%' }}></div>
-                  <div className="absolute w-full h-8 border-b-4 border-dashed border-white" style={{ top: '30%' }}></div>
-                  <div className="absolute w-full h-8 border-b-4 border-dashed border-white" style={{ top: '50%' }}></div>
-                  <div className="absolute w-full h-8 border-b-4 border-dashed border-white" style={{ top: '70%' }}></div>
+                <div key={lane} className="absolute h-full bg-gray-700 border-l-2 border-r-2 border-white border-opacity-30" style={{ left: `${getLaneX(lane) - 30}px`, width: '60px' }}>
+                  {[10, 30, 50, 70].map((top, i) => (
+                    <div key={i} className="absolute w-full border-b-2 border-dashed border-white border-opacity-40" style={{ top: `${top}%` }}></div>
+                  ))}
                 </div>
               ))}
             </div>
 
             {obstacles.map(obs => (
-              <div key={obs.id} className="absolute border-4 border-white" style={{ left: `${getLaneX(obs.lane) - 25}px`, bottom: `${obs.y}px`, width: '50px', height: `${obs.height}px`, transform: 'translateZ(0)', backgroundColor: obs.type === 'train' ? '#dc2626' : '#eab308', imageRendering: 'pixelated', boxShadow: '4px 4px 0px rgba(0,0,0,0.5)' }}>
-                <div className="text-white text-center font-bold" style={{ fontFamily: 'monospace', fontSize: obs.type === 'train' ? '32px' : '24px' }}>
-                  {obs.type === 'train' ? '█' : '▲'}
-                </div>
+              <div key={obs.id} className="absolute border-2 border-white" style={{ left: `${getLaneX(obs.lane) - 20}px`, bottom: `${obs.y}px`, width: '40px', height: `${obs.height}px`, backgroundColor: obs.type === 'train' ? '#dc2626' : '#eab308', boxShadow: '2px 2px 0px rgba(0,0,0,0.5)' }}>
+                <div className="text-white text-center font-bold text-xl">{obs.type === 'train' ? '█' : '▲'}</div>
               </div>
             ))}
 
             {collectibles.map(col => (
-              <div key={col.id} className="absolute border-4 border-yellow-600 bg-yellow-400" style={{ left: `${getLaneX(col.lane) - 12}px`, bottom: `${col.y}px`, width: '24px', height: '24px', borderRadius: '50%', transform: 'translateZ(0)', imageRendering: 'pixelated', boxShadow: '2px 2px 0px rgba(0,0,0,0.5)' }}></div>
+              <div key={col.id} className="absolute border-2 border-yellow-600 bg-yellow-400 rounded-full" style={{ left: `${getLaneX(col.lane) - 10}px`, bottom: `${col.y}px`, width: '20px', height: '20px', boxShadow: '1px 1px 0px rgba(0,0,0,0.5)' }}></div>
             ))}
 
             {powerUps.map(pu => (
-              <div key={pu.id} className="absolute border-4 border-white" style={{ left: `${getLaneX(pu.lane) - 15}px`, bottom: `${pu.y}px`, width: '30px', height: '30px', transform: 'translateZ(0)', backgroundColor: pu.type === 'jetpack' ? '#facc15' : pu.type === 'magnet' ? '#a855f7' : '#22c55e', imageRendering: 'pixelated', boxShadow: '3px 3px 0px rgba(0,0,0,0.5)' }}>
-                <div className="text-white text-center text-lg font-bold" style={{ fontFamily: 'monospace' }}>
-                  {pu.type === 'jetpack' && '↑'}
-                  {pu.type === 'magnet' && 'M'}
-                  {pu.type === 'multiplier' && 'x2'}
-                </div>
+              <div key={pu.id} className="absolute border-2 border-white flex items-center justify-center text-white font-bold" style={{ left: `${getLaneX(pu.lane) - 12}px`, bottom: `${pu.y}px`, width: '24px', height: '24px', backgroundColor: pu.type === 'jetpack' ? '#facc15' : pu.type === 'magnet' ? '#a855f7' : '#22c55e', boxShadow: '2px 2px 0px rgba(0,0,0,0.5)', fontSize: '14px' }}>
+                {pu.type === 'jetpack' && '↑'}
+                {pu.type === 'magnet' && 'M'}
+                {pu.type === 'multiplier' && '×2'}
               </div>
             ))}
 
-            <div className="absolute transition-all duration-100" style={{ left: `${getLaneX(playerLane) - 24}px`, bottom: `${400 + playerY}px`, transform: 'translateZ(0)', imageRendering: 'pixelated' }}>
+            <div className="absolute" style={{ left: `${getLaneX(playerLane) - 20}px`, bottom: `${400 + playerY}px` }}>
               <PixelPlayer isInvincible={isInvincible} activePowerUp={activePowerUp} />
             </div>
           </div>
 
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex gap-8">
-            <button onClick={(e) => { e.stopPropagation(); moveLane(-1); }} className="bg-white border-4 border-black p-4 transform transition hover:scale-110 active:scale-95" style={{ imageRendering: 'pixelated', boxShadow: '4px 4px 0px #000' }}>
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="black">
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 flex gap-4">
+            <button onClick={(e) => { e.stopPropagation(); moveLane(-1); }} className="bg-white border-2 border-black p-3 active:scale-95" style={{ boxShadow: '2px 2px 0px #000' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="black">
                 <path d="M15 18l-6-6 6-6v12z"/>
               </svg>
             </button>
-            <button onClick={(e) => { e.stopPropagation(); moveLane(1); }} className="bg-white border-4 border-black p-4 transform transition hover:scale-110 active:scale-95" style={{ imageRendering: 'pixelated', boxShadow: '4px 4px 0px #000' }}>
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="black">
-                <path d="M9
+            <button onClick={(e) => { e.stopPropagation(); moveLane(1); }} className="bg-white border-2 border-black p-3 active:scale-95" style={{ boxShadow: '2px 2px 0px #000' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="black">
+                <path d="M9 6l6 6-6 6V6z"/>
+              </svg>
+            </button>
+          </div>
+        </>
+      )}
 
+      {gameState === 'gameOver' && (
+        <div className="text-center z-10 p-4">
+          <h2 className="text-4xl font-bold text-red-600 mb-4" style={{ fontFamily: 'monospace', textShadow: '3px 3px 0px #000' }}>GAME OVER!</h2>
+          <div className="bg-black border-4 border-white p-6 mb-4">
+            <p className="text-2xl font-bold text-yellow-400 mb-2" style={{ fontFamily: 'monospace' }}>SCORE: {score}</p>
+            <p className="text-xl font-bold text-white mb-2" style={{ fontFamily: 'monospace' }}>COINS: {coins}</p>
+            <p className="text-lg text-gray-400" style={{ fontFamily: 'monospace' }}>HIGH: {highScore}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+window.initGame = () => {
+  ReactDOM.render(<SubwaySurfers />, document.getElementById('root'));
+};
+
+// Auto-start if overlay hidden (for testing)
+if (document.getElementById('intro-overlay').classList.contains('hidden')) {
+  window.initGame();
+}
+
+// Play Again Handler
+document.getElementById('play-again').addEventListener('click', async (e) => {
+  e.preventDefault();
+  const btn = e.target;
+  const payThen = window.payThen || async (action) => action();
+  await payThen(async () => {
+    btn.classList.add('hidden');
+    window.initGame();
+  }, btn);
+});
+</script>
+</body>
+</html>
