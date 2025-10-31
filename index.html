@@ -251,16 +251,33 @@
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    padding: 16px 32px;
-    background: linear-gradient(135deg, #ff8c42, #ff6b1a);
+    padding: 24px 48px;
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
     color: #fff;
     border: none;
-    border-radius: 12px;
+    border-radius: 16px;
     font-weight: 900;
-    font-size: 18px;
+    font-size: 28px;
     cursor: pointer;
-    box-shadow: 0 10px 40px rgba(255,107,26,0.5);
-    z-index: 50;
+    box-shadow: 0 15px 50px rgba(139,92,246,0.6);
+    z-index: 150;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s;
+  }
+  
+  #play-again:hover {
+    transform: translate(-50%, -50%) scale(1.05);
+    box-shadow: 0 20px 60px rgba(139,92,246,0.8);
+  }
+  
+  #play-again::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    z-index: -1;
   }
 </style>
 </head>
@@ -269,11 +286,11 @@
     <!-- Intro Overlay -->
     <div id="intro-overlay" class="overlay">
        <div class="card" role="dialog" aria-modal="true" style="text-align: center; max-width: 450px;">
-        <h1 style="font-size: 42px; margin-bottom: 20px;">Tic-Tac-Toe 🎮</h1>
-        <p style="font-size: 12px; color: #e7ecf0; margin-bottom: 30px; line-height: 1.6;">
+        <h1 style="font-size: 42px; margin-bottom: 20px;">Play Tic-Tac-Toe 🎮</h1>
+        <p style="font-size: 18px; color: #e7ecf0; margin-bottom: 30px; line-height: 1.6;">
           Start on Easy, beat it to unlock Medium, then Hard mode.
         </p>
-        <button id="play" class="btn-primary" style="font-size: 18px; padding: 16px 40px;">▶️ PLAY 🎮</button>
+        <button id="play" class="btn-primary" style="font-size: 18px; padding: 16px 40px;">▶️ PLAY</button>
         </div>
         <div id="status" class="hidden"></div>
       </div>
@@ -327,7 +344,7 @@
       </div>
     </div>
 
-    <button id="play-again" class="hidden">Play Again</button>
+    <button id="play-again" class="hidden">💰 Pay & Play Again</button>
   </div>
 
 <script type="module">
@@ -647,10 +664,10 @@ function endGame(result) {
     
     if (gameState.difficulty === 'easy') {
       gameState.difficulty = 'medium';
-      showLevelUpNotice('Level Up! 💪');
+      showLevelUpNotice('Level Up! Now playing on MEDIUM difficulty! 💪');
     } else if (gameState.difficulty === 'medium') {
       gameState.difficulty = 'hard';
-      showLevelUpNotice('Level Up! 🔥');
+      showLevelUpNotice('Level Up! Now playing on HARD difficulty! 🔥');
     } else {
       showLevelUpNotice('Victory on HARD mode! You\'re a master! 🏆');
     }
@@ -662,8 +679,8 @@ function endGame(result) {
     gameState.stats.attempts--;
     
     setTimeout(() => {
-      gameStatus.textContent = "💀 Game Over 💀";
-      showLevelUpNotice('Game Over! Play Again ...');
+      gameStatus.textContent = "💀 Game Over! You lost your life!";
+      showLevelUpNotice('Game Over! Pay to play again from Easy mode...');
       disable(resetBtn, true);
       
       setTimeout(() => {
@@ -748,8 +765,3 @@ window.addEventListener('unhandledrejection', e => console.error('Unhandled prom
 </script>
 </body>
 </html>
-
-
-
-
-
