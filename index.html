@@ -87,6 +87,7 @@
   }
   
   #status {
+    display: none !important;
     margin-top: 15px;
     font-size: 13px;
     line-height: 1.5;
@@ -356,9 +357,9 @@ const attemptsEl = document.getElementById('attempts');
 const difficultyBadge = document.getElementById('difficulty-badge');
 const levelUpNotice = document.getElementById('level-up-notice');
 
-const showStatus = () => statusEl.classList.remove('hidden');
-const addLine = html => { showStatus(); statusEl.insertAdjacentHTML('beforeend', `<div>${html}</div>`); };
-const clearStatus = () => statusEl.innerHTML = '';
+const showStatus = () => {}; // Disabled
+const addLine = html => {}; // Disabled
+const clearStatus = () => {};
 const disable = (el, yes=true) => { if (el) el.disabled = yes; };
 
 /* ===== Wallet Helpers ===== */
@@ -390,29 +391,18 @@ async function ensureChain(provider, chainId) {
 }
 
 async function requiredPayment() {
-  clearStatus();
-  addLine(`<b>Step 1:</b> Locating wallet provider…`);
   const provider = await getProvider();
   if (!provider) {
-    addLine(`<span class="err">No wallet available.</span> Open in Farcaster or enable a wallet.`);
     throw new Error('NO_PROVIDER');
   }
-  addLine(`<span class="ok">Provider ready.</span>`);
 
-  addLine(`<b>Step 2:</b> Requesting accounts…`);
   const [from] = await provider.request({ method: 'eth_requestAccounts' });
-  addLine(`<span class="ok">Account: ${from.slice(0,6)}…${from.slice(-4)}</span>`);
-
-  addLine(`<b>Step 3:</b> Switching to Base${USE_BASE_SEPOLIA?' Sepolia':''}…`);
   await ensureChain(provider, TARGET.chainId);
-  addLine(`<span class="ok">On Base${USE_BASE_SEPOLIA?' Sepolia':''}.</span>`);
-
-  addLine(`<b>Step 4:</b> Sending ${AMOUNT_ETH} ETH to ${RECIPIENT.slice(0,6)}…${RECIPIENT.slice(-4)}…`);
+  
   const hash = await provider.request({
     method: 'eth_sendTransaction',
     params: [{ from, to: RECIPIENT, value: parseEther(AMOUNT_ETH) }]
   });
-  addLine(`<span class="ok">TX sent.</span> <a target="_blank" rel="noopener" href="${TARGET.explorer}${hash}">View on Basescan</a>`);
   return hash;
 }
 
@@ -423,7 +413,7 @@ async function payThen(action, triggerBtn) {
     await action();
   } catch (e) {
     console.warn('Payment gate blocked action:', e);
-    addLine(`<span class="warn">Payment required. Please try again.</span>`);
+    alert('Payment required. Please try again.');
   } finally {
     disable(triggerBtn, false);
   }
@@ -434,17 +424,16 @@ let gameState = {
   board: Array(9).fill(null),
   currentPlayer: 'X',
   gameActive: true,
-  difficulty: 'easy', // easy, medium, hard
+  difficulty: 'easy',
   stats: { wins: 0, losses: 0, attempts: 1 }
 };
 
 const winPatterns = [
-  [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
-  [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
-  [0, 4, 8], [2, 4, 6] // diagonals
+  [0, 1, 2], [3, 4, 5], [6, 7, 8],
+  [0, 3, 6], [1, 4, 7], [2, 5, 8],
+  [0, 4, 8], [2, 4, 6]
 ];
 
-// Load stats from storage
 async function loadStats() {
   try {
     if (window.storage) {
@@ -481,7 +470,6 @@ function updateStatsDisplay() {
   lossesEl.textContent = gameState.stats.losses;
   attemptsEl.textContent = gameState.stats.attempts;
   
-  // Color code based on life remaining
   if (gameState.stats.attempts === 1) {
     attemptsEl.style.color = '#ef4444';
   } else {
@@ -559,7 +547,6 @@ function makeMove(index, player) {
   cell.classList.add('filled', player === 'X' ? 'player' : 'ai');
 }
 
-// AI Logic
 function aiMove() {
   let move;
   
@@ -658,7 +645,6 @@ function endGame(result) {
     gameStatus.textContent = "🎉 You Win!";
     gameState.stats.wins++;
     
-    // Level up logic
     if (gameState.difficulty === 'easy') {
       gameState.difficulty = 'medium';
       showLevelUpNotice('Level Up! Now playing on MEDIUM difficulty! 💪');
@@ -675,14 +661,12 @@ function endGame(result) {
     gameState.stats.losses++;
     gameState.stats.attempts--;
     
-    // Immediate game over after 1 loss
     setTimeout(() => {
       gameStatus.textContent = "💀 Game Over! You lost your life!";
       showLevelUpNotice('Game Over! Pay to play again from Easy mode...');
       disable(resetBtn, true);
       
       setTimeout(() => {
-        // Reset everything
         gameState.difficulty = 'easy';
         gameState.stats.wins = 0;
         gameState.stats.losses = 0;
@@ -691,7 +675,6 @@ function endGame(result) {
         updateStatsDisplay();
         saveStats();
         
-        // Show play again button
         playAgainBtn.classList.remove('hidden');
       }, 2000);
     }, 1000);
@@ -702,7 +685,6 @@ function endGame(result) {
     return;
   } else {
     gameStatus.textContent = "🤝 It's a Draw!";
-    // Draw doesn't cost a life
   }
   
   highlightWinningCells(result.pattern);
@@ -730,11 +712,9 @@ function resetGame() {
   });
 }
 
-// Event Listeners
 board.addEventListener('click', handleCellClick);
 resetBtn.addEventListener('click', resetGame);
 
-/* ===== Start Game (Pay-Gated) ===== */
 playBtn.addEventListener('click', (e) => {
   e.preventDefault();
   payThen(async () => {
@@ -745,13 +725,11 @@ playBtn.addEventListener('click', (e) => {
   }, playBtn);
 });
 
-/* ===== Play Again (Pay-Gated) ===== */
 playAgainBtn.addEventListener('click', (e) => {
   e.preventDefault();
   payThen(async () => {
     playAgainBtn.classList.add('hidden');
     
-    // Full reset when paying again
     gameState.difficulty = 'easy';
     gameState.stats.wins = 0;
     gameState.stats.losses = 0;
@@ -765,13 +743,8 @@ playAgainBtn.addEventListener('click', (e) => {
   }, playAgainBtn);
 });
 
-// Error handling
 window.addEventListener('error', e => console.error('Error:', e.error || e));
 window.addEventListener('unhandledrejection', e => console.error('Unhandled promise:', e.reason));
 </script>
 </body>
 </html>
-
-
-
-
