@@ -662,8 +662,8 @@ function endGame(result) {
     gameState.stats.attempts--;
     
     setTimeout(() => {
-      gameStatus.textContent = "💀 Game Over! You lost your life!";
-      showLevelUpNotice('Game Over! Pay to play again from Easy mode...');
+      gameStatus.textContent = "💀 Game Over 💀";
+      showLevelUpNotice('Game Over! Play Again ...');
       disable(resetBtn, true);
       
       setTimeout(() => {
@@ -748,4 +748,5 @@ window.addEventListener('unhandledrejection', e => console.error('Unhandled prom
 </script>
 </body>
 </html>
+
 
