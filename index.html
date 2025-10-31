@@ -647,10 +647,10 @@ function endGame(result) {
     
     if (gameState.difficulty === 'easy') {
       gameState.difficulty = 'medium';
-      showLevelUpNotice('Level Up! Now playing on MEDIUM difficulty! 💪');
+      showLevelUpNotice('Level Up! 💪');
     } else if (gameState.difficulty === 'medium') {
       gameState.difficulty = 'hard';
-      showLevelUpNotice('Level Up! Now playing on HARD difficulty! 🔥');
+      showLevelUpNotice('Level Up! 🔥');
     } else {
       showLevelUpNotice('Victory on HARD mode! You\'re a master! 🏆');
     }
@@ -748,3 +748,4 @@ window.addEventListener('unhandledrejection', e => console.error('Unhandled prom
 </script>
 </body>
 </html>
+
