@@ -9,9 +9,9 @@
     "name": "XO Game",
     "iconUrl": "https://m.media-amazon.com/images/I/81Ql2snyU4L.png",
     "homeUrl": "https://gaming1-rho.vercel.app/",
-    "imageUrl": "https://m.media-amazon.com/images/I/81Ql2snyU4L.png",
+    "imageUrl": "https://pettingzoo.farama.org/_images/classic_tictactoe.gif",
     "buttonTitle": "Play Now",
-    "splashImageUrl": "https://pettingzoo.farama.org/_images/classic_tictactoe.gif",
+    "splashImageUrl": "https://m.media-amazon.com/images/I/81Ql2snyU4L.png",
     "splashBackgroundColor": "#000000",
     "description": "XO in Farcaster"
   }
