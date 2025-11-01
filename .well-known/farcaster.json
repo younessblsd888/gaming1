@@ -7,9 +7,9 @@
   "miniapp": {
     "version": "1",
     "name": "XO Game",
-    "iconUrl": "https://m.media-amazon.com/images/I/81Ql2snyU4L.png",
+    "iconUrl": "https://pettingzoo.farama.org/_images/classic_tictactoe.gif",
     "homeUrl": "https://gaming1-rho.vercel.app/",
-    "imageUrl": "https://pettingzoo.farama.org/_images/classic_tictactoe.gif",
+    "imageUrl": "https://m.media-amazon.com/images/I/81Ql2snyU4L.png",
     "buttonTitle": "Play Now",
     "splashImageUrl": "https://m.media-amazon.com/images/I/81Ql2snyU4L.png",
     "splashBackgroundColor": "#000000",
